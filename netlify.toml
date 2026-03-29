@@ -2,8 +2,9 @@
 
 [build]
   # Vite app lives in /infoshield subfolder
+  # base= changes cwd to infoshield/, so publish is relative to that
   base    = "infoshield"
-  publish = "infoshield/dist"
+  publish = "dist"
   command = "npm run build"
 
 [build.environment]
