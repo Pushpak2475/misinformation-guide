@@ -94,10 +94,10 @@ export default function LiveStream() {
       const [news, reddit, nitter, mastodon, misinfo, telegram] = await Promise.allSettled([
         fetchAllNews(15),
         fetchRedditTrending(true),
-        fetchNitterFeed(5),
+        fetchNitterFeed(),
         fetchMastodon(5),
         fetchMisinformationSources(),
-        fetchTelegramChannels(4),
+        fetchTelegramChannels(),
       ]);
 
       if (ctrl.signal.aborted) return;
