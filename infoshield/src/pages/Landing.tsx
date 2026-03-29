@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+﻿import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import ParticlesBackground from '../components/ui/ParticlesBackground';
 import {
@@ -109,8 +109,11 @@ export default function Landing() {
           <button onClick={() => navigate('/check-news')} className="btn-ghost text-sm py-2">
             Try Demo
           </button>
-          <button onClick={() => navigate('/admin')} className="btn-primary text-sm py-2">
-            Admin Login
+          <button onClick={() => navigate('/login')} className="btn-ghost text-sm py-2">
+            Sign In
+          </button>
+          <button onClick={() => navigate('/signup')} className="btn-primary text-sm py-2">
+            Sign Up
           </button>
         </div>
       </nav>
@@ -141,19 +144,19 @@ export default function Landing() {
         {/* CTA Buttons */}
         <motion.div {...fadeUp(0.3)} className="flex flex-col sm:flex-row items-center gap-4 mb-16">
           <button
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate('/signup')}
             className="btn-primary text-base px-8 py-4 gap-3"
           >
-            <BarChart2 className="w-5 h-5" />
-            Go to Dashboard
+            <Shield className="w-5 h-5" />
+            Get Started Free
             <ArrowRight className="w-5 h-5" />
           </button>
           <button
-            onClick={() => navigate('/check-news')}
+            onClick={() => navigate('/login')}
             className="btn-ghost text-base px-8 py-4"
           >
-            <Search className="w-5 h-5" />
-            Analyze News
+            <ArrowRight className="w-5 h-5" />
+            Sign In
           </button>
         </motion.div>
 
@@ -371,14 +374,14 @@ export default function Landing() {
               Access the full dashboard to monitor, analyze, and counter misinformation in real time.
             </p>
             <div className="relative flex flex-col sm:flex-row items-center justify-center gap-4">
-              <button onClick={() => navigate('/dashboard')} className="btn-primary text-base px-8 py-4">
-                <BarChart2 className="w-5 h-5" />
-                Launch Dashboard
+              <button onClick={() => navigate('/signup')} className="btn-primary text-base px-8 py-4">
+                <ArrowRight className="w-5 h-5" />
+                Get Started Free
                 <ArrowRight className="w-5 h-5" />
               </button>
               <button onClick={() => navigate('/check-news')} className="btn-ghost text-base px-8 py-4">
                 <Search className="w-5 h-5" />
-                Check a News Article
+                Try Demo
               </button>
             </div>
           </div>
@@ -396,3 +399,5 @@ export default function Landing() {
     </div>
   );
 }
+
+

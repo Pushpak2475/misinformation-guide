@@ -1,135 +1,63 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts';
 import {
-  Shield, Lock, Eye, EyeOff, AlertCircle, CheckCircle, Clock,
+  Shield, AlertCircle, CheckCircle, Clock,
   XCircle, BarChart2, Users, Activity, ChevronDown, ChevronUp,
-  RefreshCw, Trash2, Settings,
+  RefreshCw, Trash2, Settings, LogIn,
 } from 'lucide-react';
 import Sidebar from '../components/layout/Sidebar';
 import Navbar from '../components/layout/Navbar';
 import GlassCard from '../components/ui/GlassCard';
 import { flaggedItems, agentLogs, trendData } from '../data/mockData';
+import { getSession } from '../services/authService';
 
 export default function Admin() {
-  const [loggedIn, setLoggedIn] = useState(false);
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPw, setShowPw] = useState(false);
-  const [error, setError] = useState('');
-  const [loggingIn, setLoggingIn] = useState(false);
+  const navigate = useNavigate();
+  const session = getSession();
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
-  const handleLogin = async () => {
-    if (!username || !password) { setError('Both fields are required.'); return; }
-    setLoggingIn(true);
-    setError('');
-    await new Promise((r) => setTimeout(r, 800));
-    if (username === 'admin' && password === 'admin') {
-      setLoggedIn(true);
-    } else {
-      setError('Invalid credentials. Try admin / admin');
-    }
-    setLoggingIn(false);
-  };
-
-  /* ── LOGIN SCREEN ── */
-  if (!loggedIn) {
+  /* — NOT SIGNED IN — redirect prompt */
+  if (!session?.loggedIn) {
     return (
       <div className="min-h-screen bg-dark flex items-center justify-center relative overflow-hidden">
-        {/* BG */}
         <div className="absolute inset-0 cyber-grid opacity-30" />
         <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
-
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="relative z-10 w-full max-w-sm px-6"
+          className="relative z-10 w-full max-w-sm px-6 text-center"
         >
-          {/* Logo */}
           <div className="flex flex-col items-center mb-8">
             <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-accent-purple flex items-center justify-center mb-4 animate-pulse-glow">
               <Shield className="w-8 h-8 text-white" />
             </div>
             <h1 className="font-display text-2xl font-bold text-white">InfoShield AI</h1>
-            <p className="text-slate-500 text-sm mt-1">Admin Control Panel</p>
+            <p className="text-slate-500 text-sm mt-1">Admin Panel</p>
           </div>
-
-          {/* Card */}
-          <div className="glass-card">
-            <h2 className="text-lg font-semibold text-white mb-6 text-center">Secure Login</h2>
-
-            {/* Username */}
-            <div className="mb-4">
-              <label className="block text-xs text-slate-500 mb-1.5">Username</label>
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter username"
-                onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
-                className="input-glass"
-              />
-            </div>
-
-            {/* Password */}
-            <div className="mb-6">
-              <label className="block text-xs text-slate-500 mb-1.5">Password</label>
-              <div className="relative">
-                <input
-                  type={showPw ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter password"
-                  onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
-                  className="input-glass pr-10"
-                />
-                <button
-                  onClick={() => setShowPw(!showPw)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
-                >
-                  {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-
-            {/* Error */}
-            <AnimatePresence>
-              {error && (
-                <motion.div
-                  initial={{ opacity: 0, y: -8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  className="flex items-center gap-2 text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2 mb-4"
-                >
-                  <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
-                  {error}
-                </motion.div>
-              )}
-            </AnimatePresence>
-
+          <div className="glass-card text-center">
+            <LogIn className="w-10 h-10 text-primary mx-auto mb-4" />
+            <h2 className="text-lg font-semibold text-white mb-2">Sign In Required</h2>
+            <p className="text-sm text-slate-400 mb-6">You need to be signed in to access the Admin Panel.</p>
             <button
-              onClick={handleLogin}
-              disabled={loggingIn}
-              className="btn-primary w-full justify-center py-3 disabled:opacity-60"
+              onClick={() => navigate('/login')}
+              className="btn-primary w-full mb-3"
             >
-              {loggingIn ? (
-                <><RefreshCw className="w-4 h-4 animate-spin" /> Authenticating...</>
-              ) : (
-                <><Lock className="w-4 h-4" /> Sign In</>
-              )}
+              Sign In
             </button>
-
-            <p className="text-center text-xs text-slate-600 mt-4">
-              Demo credentials: admin / admin
-            </p>
+            <button
+              onClick={() => navigate('/signup')}
+              className="btn-ghost w-full"
+            >
+              Create Account
+            </button>
           </div>
         </motion.div>
       </div>
     );
   }
-
   /* ── ADMIN DASHBOARD ── */
   const adminStats = [
     { label: 'Total Flagged', value: '3,841', icon: AlertCircle, color: '#ef4444' },

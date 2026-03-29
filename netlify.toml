@@ -1,0 +1,44 @@
+# netlify.toml — Netlify deployment + local dev configuration
+#
+# DEPLOYMENT:   npx netlify deploy --prod
+# LOCAL DEV:    netlify dev           (starts functions + Vite together on :8888)
+# FUNCTIONS ONLY: netlify functions:serve --port 8888
+
+[build]
+  # Vite builds into infoshield/dist
+  base    = "infoshield"
+  publish = "infoshield/dist"
+  command = "npm run build"
+
+[build.environment]
+  NODE_VERSION = "18"
+
+[functions]
+  # Where our serverless functions live
+  directory     = "netlify/functions"
+  node_bundler  = "esbuild"
+
+[dev]
+command    = "npm run dev"
+port       = 8888
+targetPort = 5174
+
+# Security headers for all routes
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options        = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy        = "strict-origin-when-cross-origin"
+
+# Cache static assets aggressively
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# SPA routing — send all routes to index.html
+[[redirects]]
+  from   = "/*"
+  to     = "/index.html"
+  status = 200

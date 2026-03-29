@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { type ReactNode } from 'react';
+import { type ReactNode, type CSSProperties } from 'react';
 
 interface GlassCardProps {
   children: ReactNode;
@@ -17,7 +17,7 @@ export default function GlassCard({ children, className = '', hover = true, glow
       transition={{ duration: 0.5, delay }}
       whileHover={hover ? { y: -4, transition: { duration: 0.2 } } : undefined}
       className={`glass-card ${className}`}
-      style={glow ? { '--glow-color': glow } as React.CSSProperties : undefined}
+      style={glow ? { '--glow-color': glow } as CSSProperties : undefined}
     >
       {children}
     </motion.div>

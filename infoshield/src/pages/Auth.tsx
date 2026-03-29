@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, type ElementType } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, Eye, EyeOff, Lock, Mail, AlertCircle, CheckCircle, Loader, ShieldCheck } from 'lucide-react';
-import { createVerification, isVerified } from './VerifyEmail';
+import { createVerification, isVerified } from '../services/otpService';
 
 // Simple in-memory auth store (persisted to localStorage)
 function getUsers(): Record<string, { email: string; name: string; password: string }> {
@@ -20,21 +20,13 @@ function saveUser(email: string, name: string, password: string) {
   console.info(`[InfoShield Dev] OTP for ${email}: ${otp}`);
 }
 
-export function getSession(): { email: string; name: string; loggedIn: boolean } | null {
-  try { return JSON.parse(localStorage.getItem('infoshield_session') || 'null'); }
-  catch { return null; }
-}
-
-export function logout() {
-  localStorage.removeItem('infoshield_session');
-}
 
 // ──────────── Shared input component ────────────
 function InputField({
   label, type, value, onChange, placeholder, icon: Icon, error, hint,
 }: {
   label: string; type: string; value: string; onChange: (v: string) => void;
-  placeholder: string; icon: React.ElementType; error?: string; hint?: string;
+  placeholder: string; icon: ElementType; error?: string; hint?: string;
 }) {
   const [show, setShow] = useState(false);
   const inputType = type === 'password' ? (show ? 'text' : 'password') : type;

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ElementType } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GitBranch, Search, ChevronRight, AlertTriangle, CheckCircle, XCircle, Loader, Info, Clock } from 'lucide-react';
 import Sidebar from '../components/layout/Sidebar';
@@ -33,7 +33,7 @@ const nodeColors: Record<string, string> = {
   debunk: '#10b981',
 };
 
-const nodeIcons: Record<string, React.ElementType> = {
+const nodeIcons: Record<string, ElementType> = {
   origin: AlertTriangle,
   relay: ChevronRight,
   mutation: XCircle,

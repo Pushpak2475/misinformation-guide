@@ -1,76 +1,26 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, type ElementType, type KeyboardEvent, type ClipboardEvent } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, Mail, CheckCircle, AlertCircle, RefreshCw, ArrowRight, Sparkles } from 'lucide-react';
-
-// ─── OTP Store helpers ───────────────────────────────────────────────────────
-function generateOTP(): string {
-  return String(Math.floor(100000 + Math.random() * 900000));
-}
-
-export function createVerification(email: string): string {
-  const otp = generateOTP();
-  const expiry = Date.now() + 5 * 60 * 1000; // 5 min TTL
-  localStorage.setItem(
-    `infoshield_otp_${email}`,
-    JSON.stringify({ otp, expiry, verified: false })
-  );
-  return otp;
-}
-
-export function isVerified(email: string): boolean {
-  try {
-    const raw = localStorage.getItem(`infoshield_otp_${email}`);
-    if (!raw) return false;
-    return JSON.parse(raw).verified === true;
-  } catch {
-    return false;
-  }
-}
-
-function validateOTP(email: string, inputOtp: string): 'valid' | 'expired' | 'invalid' {
-  try {
-    const raw = localStorage.getItem(`infoshield_otp_${email}`);
-    if (!raw) return 'invalid';
-    const { otp, expiry } = JSON.parse(raw);
-    if (Date.now() > expiry) return 'expired';
-    if (otp === inputOtp) return 'valid';
-    return 'invalid';
-  } catch {
-    return 'invalid';
-  }
-}
-
-function markVerified(email: string) {
-  try {
-    const raw = localStorage.getItem(`infoshield_otp_${email}`);
-    if (!raw) return;
-    const data = JSON.parse(raw);
-    data.verified = true;
-    localStorage.setItem(`infoshield_otp_${email}`, JSON.stringify(data));
-    // Mark session as verified too
-    const session = JSON.parse(localStorage.getItem('infoshield_session') || 'null');
-    if (session) {
-      session.verified = true;
-      localStorage.setItem('infoshield_session', JSON.stringify(session));
-    }
-  } catch { /* noop */ }
-}
+import { Mail, CheckCircle, AlertCircle, RefreshCw, ArrowRight, Sparkles } from 'lucide-react';
+import { createVerification, validateOTP, markVerified } from '../services/otpService';
 
 // ─── Toast ───────────────────────────────────────────────────────────────────
 type ToastType = 'success' | 'error' | 'info';
+
 function Toast({ msg, type, onClose }: { msg: string; type: ToastType; onClose: () => void }) {
-  const colors = {
+  const colors: Record<ToastType, string> = {
     success: 'bg-green-500/20 border-green-500/40 text-green-300',
     error: 'bg-red-500/20 border-red-500/40 text-red-300',
     info: 'bg-primary/20 border-primary/40 text-primary',
   };
-  const icons = { success: CheckCircle, error: AlertCircle, info: Mail };
+  const icons: Record<ToastType, ElementType> = { success: CheckCircle, error: AlertCircle, info: Mail };
   const Icon = icons[type];
+
   useEffect(() => {
     const t = setTimeout(onClose, 3500);
     return () => clearTimeout(t);
   }, [onClose]);
+
   return (
     <motion.div
       initial={{ x: 80, opacity: 0 }}
@@ -88,7 +38,7 @@ function Toast({ msg, type, onClose }: { msg: string; type: ToastType; onClose: 
 export default function VerifyEmail() {
   const navigate = useNavigate();
   const location = useLocation();
-  const email: string = (location.state as any)?.email ?? '';
+  const email: string = (location.state as { email?: string })?.email ?? '';
 
   const [digits, setDigits] = useState(['', '', '', '', '', '']);
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error' | 'expired'>('idle');
@@ -96,10 +46,11 @@ export default function VerifyEmail() {
   const [resendCooldown, setResendCooldown] = useState(0);
   const [attempts, setAttempts] = useState(0);
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
+  const toastIdRef = useRef(0);
 
-  // Simulate OTP already sent (was sent during signup)
   const addToast = (msg: string, type: ToastType) => {
-    const id = Date.now();
+    toastIdRef.current += 1;
+    const id = toastIdRef.current;
     setToasts((prev) => [...prev, { id, msg, type }]);
   };
 
@@ -121,14 +72,14 @@ export default function VerifyEmail() {
     if (val && idx < 5) inputRefs.current[idx + 1]?.focus();
   };
 
-  const handleKeyDown = (idx: number, e: React.KeyboardEvent) => {
+  const handleKeyDown = (idx: number, e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Backspace' && !digits[idx] && idx > 0) {
       inputRefs.current[idx - 1]?.focus();
     }
-    if (e.key === 'Enter') handleVerify();
+    if (e.key === 'Enter') void handleVerify();
   };
 
-  const handlePaste = (e: React.ClipboardEvent) => {
+  const handlePaste = (e: ClipboardEvent<HTMLInputElement>) => {
     e.preventDefault();
     const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
     const newDigits = [...digits];
@@ -142,7 +93,7 @@ export default function VerifyEmail() {
     if (code.length < 6) { addToast('Enter all 6 digits', 'error'); return; }
     if (!email) { addToast('Email not found. Please sign up again.', 'error'); return; }
     setStatus('loading');
-    await new Promise((r) => setTimeout(r, 900));
+    await new Promise<void>((r) => setTimeout(r, 900));
     const result = validateOTP(email, code);
     if (result === 'valid') {
       markVerified(email);
@@ -155,7 +106,7 @@ export default function VerifyEmail() {
     } else {
       setAttempts((a) => a + 1);
       setStatus('error');
-      addToast(`Invalid code${attempts >= 2 ? '. Tip: check for a newer code above' : ''}`, 'error');
+      addToast(`Invalid code${attempts >= 2 ? '. Tip: check console for the latest code' : ''}`, 'error');
       inputRefs.current[0]?.focus();
     }
   };
@@ -163,7 +114,8 @@ export default function VerifyEmail() {
   const handleResend = () => {
     if (resendCooldown > 0) return;
     const newOtp = createVerification(email);
-    console.info('[InfoShield Dev] New OTP:', newOtp); // In production, send via email
+    // In production: trigger email API here
+    console.info('[InfoShield Dev] New OTP:', newOtp);
     setDigits(['', '', '', '', '', '']);
     setStatus('idle');
     setAttempts(0);
@@ -214,7 +166,6 @@ export default function VerifyEmail() {
         <div className="glass-card">
           <AnimatePresence mode="wait">
             {status === 'success' ? (
-              /* ── Success State ── */
               <motion.div
                 key="success"
                 initial={{ opacity: 0, scale: 0.8 }}
@@ -256,7 +207,6 @@ export default function VerifyEmail() {
                 </div>
               </motion.div>
             ) : (
-              /* ── OTP Input State ── */
               <motion.div key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                 <h2 className="text-lg font-semibold text-white mb-2">Enter Verification Code</h2>
                 <p className="text-xs text-slate-500 mb-6">
@@ -311,7 +261,7 @@ export default function VerifyEmail() {
                 {/* Verify button */}
                 <button
                   id="verify-otp-btn"
-                  onClick={handleVerify}
+                  onClick={() => void handleVerify()}
                   disabled={status === 'loading' || otp.length < 6}
                   className="btn-primary w-full justify-center py-3 mb-4 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -338,17 +288,14 @@ export default function VerifyEmail() {
                     className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${resendCooldown > 0 ? 'animate-spin' : ''}`} />
-                    {resendCooldown > 0
-                      ? `Resend code in ${resendCooldown}s`
-                      : "Didn't receive it? Resend code"}
+                    {resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : "Didn't receive it? Resend code"}
                   </button>
                 </div>
 
                 {/* Dev hint */}
                 <div className="mt-5 p-3 rounded-xl bg-primary/5 border border-primary/10">
                   <p className="text-xs text-slate-500 text-center">
-                    🧪 <span className="text-primary/80">Dev mode:</span> OTP is logged to browser console.{' '}
-                    Check console for the code.
+                    🧪 <span className="text-primary/80">Dev mode:</span> OTP is logged to browser console (F12).
                   </p>
                 </div>
               </motion.div>

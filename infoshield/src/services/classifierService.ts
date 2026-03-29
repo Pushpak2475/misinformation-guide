@@ -170,7 +170,7 @@ export const REFERENCE_SOURCES: ClassificationResult['sources'] = [
 // ─────────────────────────────────────────────────────────────
 function extractDomain(text: string): string {
   try {
-    const match = text.match(/https?:\/\/(www\.)?([^\/\s?#]+)/);
+    const match = text.match(/https?:\/\/(www\.)?([^/\s?#]+)/);
     return match ? match[2] : '';
   } catch { return ''; }
 }

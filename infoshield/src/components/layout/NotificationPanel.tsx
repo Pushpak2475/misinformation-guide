@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, type ElementType } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bell, X, ExternalLink, AlertTriangle, CheckCircle, RefreshCw, BellOff, Zap, TrendingUp, ShieldAlert } from 'lucide-react';
 import { fetchAllNews } from '../../services/newsService';
@@ -18,7 +18,7 @@ interface Notification {
   alertType: AlertType;
 }
 
-const ALERT_TYPE_CONFIG: Record<AlertType, { label: string; color: string; icon: React.ElementType }> = {
+const ALERT_TYPE_CONFIG: Record<AlertType, { label: string; color: string; icon: ElementType }> = {
   breaking:  { label: '🚨 Breaking', color: '#ef4444', icon: Zap },
   viral:     { label: '🔥 Viral',    color: '#f97316', icon: TrendingUp },
   'high-risk': { label: '⚠️ High Risk', color: '#f59e0b', icon: ShieldAlert },
@@ -32,7 +32,7 @@ function getAlertType(verdict: Verdict, confidence: number): AlertType {
   return 'normal';
 }
 
-const VERDICT_STYLE: Record<Verdict, { bg: string; text: string; icon: React.ElementType; label: string }> = {
+const VERDICT_STYLE: Record<Verdict, { bg: string; text: string; icon: ElementType; label: string }> = {
   fake:      { bg: 'bg-red-500/12 border-l-red-500',   text: 'text-red-400',   icon: AlertTriangle, label: '⚠ FAKE' },
   real:      { bg: 'bg-green-500/8 border-l-green-500', text: 'text-green-400', icon: CheckCircle,   label: '✓ REAL' },
   uncertain: { bg: 'bg-amber-500/8 border-l-amber-400', text: 'text-amber-400', icon: AlertTriangle, label: '? UNCLEAR' },

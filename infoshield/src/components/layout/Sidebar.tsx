@@ -4,7 +4,7 @@ import {
   Activity, Globe, AlertTriangle, ChevronRight, Zap, LogIn, UserPlus,
   BookOpen, Database, MessageSquare, GitBranch,
 } from 'lucide-react';
-import { getSession, logout } from '../../pages/Auth';
+import { getSession, logout } from '../../services/authService';
 
 const navItems = [
   { to: '/dashboard',  icon: LayoutDashboard, label: 'Dashboard' },

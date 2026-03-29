@@ -35,7 +35,28 @@ export default function RSSFeeds() {
     setRefreshing(false);
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  // Initial load — use local async fn inside effect to satisfy react-hooks/set-state-in-effect
+  useEffect(() => {
+    let cancelled = false;
+    async function init() {
+      setRefreshing(true);
+      const raw = await fetchAllNews(40);
+      if (cancelled) return;
+      const classified = await Promise.all(
+        raw.map(async (item) => {
+          const res = await classifyText(item.title + ' ' + item.description);
+          return { ...item, verdict: res.verdict, confidence: res.confidence };
+        })
+      );
+      if (cancelled) return;
+      setArticles(classified);
+      setLastUpdated(new Date().toLocaleTimeString());
+      setLoading(false);
+      setRefreshing(false);
+    }
+    void init();
+    return () => { cancelled = true; };
+  }, []);
 
   const filtered = articles.filter((a) => {
     const matchVerdict = filter === 'all' || a.verdict === filter;

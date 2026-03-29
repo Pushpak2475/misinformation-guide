@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Globe, Flag, MapPin, TrendingUp, Filter, ChevronDown, CheckCircle, XCircle, AlertCircle, BookOpen, ExternalLink } from 'lucide-react';
+import { MapPin, TrendingUp, Filter, ChevronDown, CheckCircle, XCircle, AlertCircle, BookOpen, ExternalLink } from 'lucide-react';
 import Sidebar from '../components/layout/Sidebar';
 
 type Verdict = 'REAL' | 'FAKE' | 'UNVERIFIED';
