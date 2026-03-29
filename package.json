@@ -4,5 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "cd infoshield && npm run dev"
+  },
+  "devDependencies": {
+    "@netlify/functions": "^5.1.5"
   }
 }
