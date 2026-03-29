@@ -1,20 +1,19 @@
 # netlify.toml — Netlify deployment configuration
 
 [build]
-  # Vite app lives in /infoshield subfolder
-  # base= changes cwd to infoshield/, so publish is relative to that
+  # The Vite app and functions both live inside the /infoshield subfolder.
+  # Setting base= makes all relative paths resolve from there.
   base    = "infoshield"
   publish = "dist"
-  command = "npm run build"
+  # Install @netlify/functions before building so the function types resolve
+  command = "npm install && npm run build"
 
 [build.environment]
-  # Node 20 LTS — CustomEvent is a proper global here
-  NODE_VERSION = "20"
-  # Extra safety: expose CustomEvent polyfill in case Vite 8 CLI needs it before config loads
-  NODE_OPTIONS  = "--experimental-global-customevent"
+  # Node 20 LTS
+  NODE_VERSION  = "20"
 
 [functions]
-  # Netlify serverless functions (social posting, news proxy)
+  # netlify/functions/ relative to base (infoshield/) → infoshield/netlify/functions/
   directory    = "netlify/functions"
   node_bundler = "esbuild"
 
@@ -31,7 +30,7 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy        = "strict-origin-when-cross-origin"
 
-# Cache immutable static assets forever
+# Cache static assets forever (content-hashed filenames)
 [[headers]]
   for = "/assets/*"
   [headers.values]

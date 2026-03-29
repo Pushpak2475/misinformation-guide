@@ -179,19 +179,20 @@ const CONFIG = {
   NETLIFY_PROXY: '/.netlify/functions/news-proxy',
   /** allorigins.win CORS proxies tried in order (dev mode) */
   DEV_CORS_PROXIES: [
-    { url: 'https://api.allorigins.win/get?url=', type: 'json' as const },
-    { url: 'https://corsproxy.io/?',              type: 'raw'  as const },
-    { url: 'https://api.codetabs.com/v1/proxy?quest=', type: 'raw' as const },
+    { url: 'https://api.allorigins.win/raw?url=',           type: 'raw'  as const },
+    { url: 'https://corsproxy.io/?url=',                   type: 'raw'  as const },
+    { url: 'https://api.allorigins.win/get?url=',          type: 'json' as const },
+    { url: 'https://thingproxy.freeboard.io/fetch/',       type: 'raw'  as const },
   ],
 } as const;
 
 export const RSS_SOURCES: RssSource[] = [
   // Primary pool (first 5 used by fetchAllNews)
   { name: 'BBC World News',    url: 'https://feeds.bbci.co.uk/news/world/rss.xml',     domain: 'bbc.com',         category: 'World'      },
-  { name: 'NPR News',          url: 'https://feeds.npr.org/1001/rss.xml',               domain: 'npr.org',         category: 'US'         },
-  { name: 'The Guardian World',url: 'https://www.theguardian.com/world/rss',            domain: 'theguardian.com', category: 'World'      },
-  { name: 'Sky News',          url: 'https://feeds.skynews.com/feeds/rss/world.xml',    domain: 'skynews.com',     category: 'World'      },
-  { name: 'PBS NewsHour',      url: 'https://www.pbs.org/newshour/feeds/rss/headlines', domain: 'pbs.org',         category: 'US'         },
+  { name: 'NPR News',          url: 'https://feeds.npr.org/1001/rss.xml',                domain: 'npr.org',         category: 'US'         },
+  { name: 'The Guardian World',url: 'https://www.theguardian.com/world/rss',             domain: 'theguardian.com', category: 'World'      },
+  { name: 'Sky News',          url: 'https://feeds.skynews.com/feeds/rss/world.xml',     domain: 'skynews.com',     category: 'World'      },
+  { name: 'Al Jazeera',        url: 'https://www.aljazeera.com/xml/rss/all.xml',        domain: 'aljazeera.com',   category: 'World'      },
   // Extended pool
   { name: 'BBC Technology',    url: 'https://feeds.bbci.co.uk/news/technology/rss.xml', domain: 'bbc.com',         category: 'Technology' },
   { name: 'Guardian Tech',     url: 'https://www.theguardian.com/technology/rss',       domain: 'theguardian.com', category: 'Technology' },
@@ -601,9 +602,14 @@ export async function fetchAllNews(
   limit = 30,
   sources: RssSource[] = RSS_SOURCES.slice(0, CONFIG.PRIMARY_FEED_COUNT)
 ): Promise<NewsItem[]> {
-  console.info(
-    `[newsService] Fetching ${sources.length} sources via ${USE_NETLIFY_PROXY ? 'Netlify proxy' : 'allorigins CORS proxy (DEV)'}`
-  );
+  // Dev-only debug log (suppressed in production builds)
+  if (import.meta.env.DEV) {
+    console.debug(
+      `[newsService] Fetching ${sources.length} sources via ${
+        USE_NETLIFY_PROXY ? 'Netlify proxy (prod)' : 'CORS proxy (dev)'
+      }`
+    );
+  }
 
   const results = await Promise.allSettled(sources.map((s) => fetchSource(s)));
   const all: NewsItem[] = [];
@@ -739,17 +745,32 @@ export async function fetchHackerNews(limit = 10): Promise<SocialPost[]> {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function fetchMastodon(limit = 10): Promise<SocialPost[]> {
-  try {
-    const res = await fetch('https://mastodon.social/api/v1/timelines/public?limit=20&local=false', { signal: AbortSignal.timeout(6_000) });
-    if (!res.ok) return [];
-    const posts = await res.json() as MastodonStatus[];
-    return posts.filter((p) => p.content && p.url && p.language !== 'ja').slice(0, limit)
-      .map((p, i) => ({
-        id: String(p.id ?? i), title: cleanHtml(p.content ?? '', 140) || 'Mastodon post',
-        link: p.url ?? '#', source: `@${p.account?.acct ?? 'mastodon'}`,
-        platform: 'Mastodon', time: p.created_at ? new Date(p.created_at).toLocaleTimeString() : '',
-      }));
-  } catch { return []; }
+  // mastodon.social /v1/timelines/public requires auth since 2023.
+  // Use the hashtag timeline which is still anonymous-readable.
+  const tags = ['news', 'worldnews', 'journalism'];
+  for (const tag of tags) {
+    try {
+      const res = await fetch(
+        `https://mastodon.social/api/v1/timelines/tag/${tag}?limit=${Math.ceil(limit / tags.length)}&local=false`,
+        { signal: AbortSignal.timeout(6_000) }
+      );
+      if (!res.ok) continue; // 422 or 4xx → try next tag
+      const posts = await res.json() as MastodonStatus[];
+      if (!Array.isArray(posts) || posts.length === 0) continue;
+      return posts
+        .filter((p) => p.content && p.url && p.language !== 'ja')
+        .slice(0, limit)
+        .map((p, i) => ({
+          id: String(p.id ?? i),
+          title: cleanHtml(p.content ?? '', 140) || 'Mastodon post',
+          link: p.url ?? '#',
+          source: `@${p.account?.acct ?? 'mastodon'}`,
+          platform: 'Mastodon',
+          time: p.created_at ? new Date(p.created_at).toLocaleTimeString() : '',
+        }));
+    } catch { /* try next tag */ }
+  }
+  return [];
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
