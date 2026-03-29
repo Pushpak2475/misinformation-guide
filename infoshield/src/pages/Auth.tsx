@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, Eye, EyeOff, Lock, Mail, AlertCircle, CheckCircle, Loader } from 'lucide-react';
+import { Shield, Eye, EyeOff, Lock, Mail, AlertCircle, CheckCircle, Loader, ShieldCheck } from 'lucide-react';
+import { createVerification, isVerified } from './VerifyEmail';
 
 // Simple in-memory auth store (persisted to localStorage)
 function getUsers(): Record<string, { email: string; name: string; password: string }> {
@@ -13,7 +14,10 @@ function saveUser(email: string, name: string, password: string) {
   const users = getUsers();
   users[email] = { email, name, password };
   localStorage.setItem('infoshield_users', JSON.stringify(users));
-  localStorage.setItem('infoshield_session', JSON.stringify({ email, name, loggedIn: true }));
+  localStorage.setItem('infoshield_session', JSON.stringify({ email, name, loggedIn: true, verified: false }));
+  // Generate OTP and log to console (in prod, send via email)
+  const otp = createVerification(email);
+  console.info(`[InfoShield Dev] OTP for ${email}: ${otp}`);
 }
 
 export function getSession(): { email: string; name: string; loggedIn: boolean } | null {
@@ -78,15 +82,24 @@ export function Login() {
     const users = getUsers();
     const user = users[email.toLowerCase()];
 
-    // Allow demo admin login
+    // Allow demo admin login (pre-verified)
     const isDemoAdmin = email === 'admin@infoshield.ai' && password === 'admin123';
 
     if (isDemoAdmin) {
-      localStorage.setItem('infoshield_session', JSON.stringify({ email, name: 'Admin User', loggedIn: true }));
+      localStorage.setItem('infoshield_session', JSON.stringify({ email, name: 'Admin User', loggedIn: true, verified: true }));
       setSuccess(true);
       setTimeout(() => navigate('/dashboard'), 900);
     } else if (user && user.password === password) {
-      localStorage.setItem('infoshield_session', JSON.stringify({ email: user.email, name: user.name, loggedIn: true }));
+      const verified = isVerified(email.toLowerCase());
+      localStorage.setItem('infoshield_session', JSON.stringify({ email: user.email, name: user.name, loggedIn: true, verified }));
+      if (!verified) {
+        // Regenerate OTP and redirect to verify
+        const otp = createVerification(email.toLowerCase());
+        console.info(`[InfoShield Dev] OTP for ${email}: ${otp}`);
+        setLoading(false);
+        navigate('/verify-email', { state: { email: email.toLowerCase() } });
+        return;
+      }
       setSuccess(true);
       setTimeout(() => navigate('/dashboard'), 900);
     } else {
@@ -200,7 +213,8 @@ export function Signup() {
     await new Promise((r) => setTimeout(r, 800));
     saveUser(email.toLowerCase(), name.trim(), password);
     setSuccess(true);
-    setTimeout(() => navigate('/dashboard'), 1000);
+    // Redirect to email verification instead of dashboard
+    setTimeout(() => navigate('/verify-email', { state: { email: email.toLowerCase() } }), 1000);
     setLoading(false);
   };
 
@@ -234,11 +248,11 @@ export function Signup() {
             {success ? (
               <motion.div key="success" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
                 className="flex flex-col items-center py-6">
-                <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center mb-3">
-                  <CheckCircle className="w-7 h-7 text-green-400" />
+                <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center mb-3">
+                  <ShieldCheck className="w-7 h-7 text-primary" />
                 </div>
                 <p className="text-white font-semibold">Account created!</p>
-                <p className="text-slate-400 text-sm mt-1">Taking you to dashboard…</p>
+                <p className="text-slate-400 text-sm mt-1">Redirecting to email verification…</p>
               </motion.div>
             ) : (
               <motion.div key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>

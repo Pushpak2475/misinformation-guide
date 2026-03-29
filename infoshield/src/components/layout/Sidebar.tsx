@@ -2,13 +2,21 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Search, Shield, Settings, LogOut,
   Activity, Globe, AlertTriangle, ChevronRight, Zap, LogIn, UserPlus,
+  BookOpen, Database, MessageSquare, GitBranch,
 } from 'lucide-react';
 import { getSession, logout } from '../../pages/Auth';
 
 const navItems = [
   { to: '/dashboard',  icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/check-news', icon: Search,           label: 'Check News' },
+  { to: '/news-hub',   icon: BookOpen,         label: 'News Hub' },
   { to: '/admin',      icon: Settings,         label: 'Admin Panel' },
+];
+
+const intelligenceItems = [
+  { to: '/sources',      icon: Database,       label: 'Data Sources',   badge: '9 src' },
+  { to: '/counter-post', icon: MessageSquare,  label: 'Counter Post',   badge: 'AI' },
+  { to: '/truth-trace',  icon: GitBranch,      label: 'Truth Trace',    badge: '🧬' },
 ];
 
 const sourceItems = [
@@ -57,6 +65,15 @@ export default function Sidebar() {
             <Icon className="w-4 h-4 flex-shrink-0" />
             <span>{label}</span>
             <ChevronRight className="w-3 h-3 ml-auto opacity-40" />
+          </NavLink>
+        ))}
+
+        <div className="text-[10px] font-semibold text-slate-600 uppercase tracking-widest px-4 mb-2 mt-6">Intelligence</div>
+        {intelligenceItems.map(({ to, icon: Icon, label, badge }) => (
+          <NavLink key={to} to={to} className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
+            <Icon className="w-4 h-4 flex-shrink-0" />
+            <span>{label}</span>
+            <span className="ml-auto text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary/70">{badge}</span>
           </NavLink>
         ))}
 

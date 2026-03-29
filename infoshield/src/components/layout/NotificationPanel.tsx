@@ -1,13 +1,10 @@
-/**
- * NotificationPanel.tsx
- * Live dropdown notification panel — fetches fake news alerts from RSS
- * and shows them as dismissible notifications with severity badges.
- */
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, X, ExternalLink, AlertTriangle, CheckCircle, RefreshCw, BellOff } from 'lucide-react';
+import { Bell, X, ExternalLink, AlertTriangle, CheckCircle, RefreshCw, BellOff, Zap, TrendingUp, ShieldAlert } from 'lucide-react';
 import { fetchAllNews } from '../../services/newsService';
 import { classifyText, type Verdict } from '../../services/classifierService';
+
+type AlertType = 'breaking' | 'viral' | 'high-risk' | 'normal';
 
 interface Notification {
   id: string;
@@ -18,13 +15,29 @@ interface Notification {
   confidence: number;
   time: string;
   read: boolean;
+  alertType: AlertType;
+}
+
+const ALERT_TYPE_CONFIG: Record<AlertType, { label: string; color: string; icon: React.ElementType }> = {
+  breaking:  { label: '🚨 Breaking', color: '#ef4444', icon: Zap },
+  viral:     { label: '🔥 Viral',    color: '#f97316', icon: TrendingUp },
+  'high-risk': { label: '⚠️ High Risk', color: '#f59e0b', icon: ShieldAlert },
+  normal:    { label: '',            color: '#64748b', icon: AlertTriangle },
+};
+
+function getAlertType(verdict: Verdict, confidence: number): AlertType {
+  if (verdict === 'fake' && confidence >= 90) return 'breaking';
+  if (verdict === 'fake' && confidence >= 75) return 'viral';
+  if (verdict === 'uncertain' && confidence >= 70) return 'high-risk';
+  return 'normal';
 }
 
 const VERDICT_STYLE: Record<Verdict, { bg: string; text: string; icon: React.ElementType; label: string }> = {
-  fake: { bg: 'bg-red-500/12 border-l-red-500',   text: 'text-red-400',   icon: AlertTriangle, label: '⚠ FAKE' },
-  real: { bg: 'bg-green-500/8 border-l-green-500', text: 'text-green-400', icon: CheckCircle,   label: '✓ REAL' },
+  fake:      { bg: 'bg-red-500/12 border-l-red-500',   text: 'text-red-400',   icon: AlertTriangle, label: '⚠ FAKE' },
+  real:      { bg: 'bg-green-500/8 border-l-green-500', text: 'text-green-400', icon: CheckCircle,   label: '✓ REAL' },
   uncertain: { bg: 'bg-amber-500/8 border-l-amber-400', text: 'text-amber-400', icon: AlertTriangle, label: '? UNCLEAR' },
 };
+
 
 export default function NotificationPanel() {
   const [open, setOpen] = useState(false);
@@ -53,6 +66,7 @@ export default function NotificationPanel() {
             confidence: res.confidence,
             time: new Date().toLocaleTimeString(),
             read: false,
+            alertType: getAlertType(res.verdict, res.confidence),
           } as Notification;
         })
       );
@@ -93,18 +107,25 @@ export default function NotificationPanel() {
     <div className="relative" ref={panelRef}>
       {/* Bell button */}
       <button
+        id="notification-bell-btn"
         onClick={() => { setOpen((o) => !o); if (!open) markAllRead(); }}
         className="relative p-2 rounded-xl hover:bg-white/8 transition-colors group"
         title="Notifications"
       >
-        <Bell className={`w-4 h-4 transition-colors ${open ? 'text-primary' : 'text-slate-400 group-hover:text-white'}`} />
-        {/* Badge: shows unread count or fake count */}
+        <motion.div animate={fakeCount > 0 && !muted ? { rotate: [0, -10, 10, -8, 8, 0] } : {}} transition={{ duration: 0.5, repeat: fakeCount > 0 ? Infinity : 0, repeatDelay: 3 }}>
+          <Bell className={`w-4 h-4 transition-colors ${open ? 'text-primary' : 'text-slate-400 group-hover:text-white'}`} />
+        </motion.div>
+        {/* Priority badge */}
         {(unreadCount > 0 || fakeCount > 0) && !muted && (
-          <span className={`absolute -top-0.5 -right-0.5 min-w-[16px] h-4 flex items-center justify-center text-[9px] font-bold rounded-full px-0.5 ${
-            fakeCount > 0 ? 'bg-red-500 text-white animate-pulse' : 'bg-primary text-dark'
-          }`}>
+          <motion.span
+            initial={{ scale: 0 }} animate={{ scale: 1 }}
+            className={`absolute -top-0.5 -right-0.5 min-w-[16px] h-4 flex items-center justify-center text-[9px] font-bold rounded-full px-0.5 ${
+              fakeCount > 0 ? 'bg-red-500 text-white' : 'bg-primary text-dark'
+            }`}
+            style={{ boxShadow: fakeCount > 0 ? '0 0 8px rgba(239,68,68,0.6)' : undefined }}
+          >
             {fakeCount > 0 ? fakeCount : unreadCount}
-          </span>
+          </motion.span>
         )}
       </button>
 
@@ -187,6 +208,12 @@ export default function NotificationPanel() {
                             <span className="text-[10px] text-slate-600">{notif.confidence}% conf.</span>
                             {!notif.read && <span className="w-1.5 h-1.5 rounded-full bg-primary ml-auto flex-shrink-0" />}
                           </div>
+                          {notif.alertType !== 'normal' && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-md mb-1"
+                              style={{ background: ALERT_TYPE_CONFIG[notif.alertType].color + '20', color: ALERT_TYPE_CONFIG[notif.alertType].color, border: `1px solid ${ALERT_TYPE_CONFIG[notif.alertType].color}40` }}>
+                              {ALERT_TYPE_CONFIG[notif.alertType].label}
+                            </span>
+                          )}
                           <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed">{notif.title}</p>
                           <div className="flex items-center gap-2 mt-1">
                             <span className="text-[10px] text-slate-600">{notif.source}</span>
