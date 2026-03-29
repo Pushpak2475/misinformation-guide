@@ -323,7 +323,8 @@ export async function classifyText(
       value: `${sensationalCount} pattern(s): all-caps, clickbait, excessive punctuation`,
       type: 'negative',
     });
-  } else {
+  } else if (text.length > 80) {
+    // Only reward "professional tone" for longer, substantive text — not for 5-word claims
     realScore += 5;
     signals.push({ label: 'Professional Tone', value: 'No excessive sensationalism detected', type: 'positive' });
   }
@@ -345,38 +346,93 @@ export async function classifyText(
     signals.push({ label: 'Shortened URL', value: 'Link shorteners often used to obscure source identity', type: 'negative' });
   }
 
-  // ── 7. Text length ──
+  // ── 7. Text length & structure ──
   if (text.length < 40) {
-    signals.push({ label: 'Very Short Input', value: 'Minimal text — domain score dominates verdict', type: 'neutral' });
+    signals.push({ label: 'Very Short Input', value: 'Minimal text — limited analysis possible', type: 'neutral' });
+  }
+
+  // ── 8. Text-structure analysis (when no domain provided) ──
+  // Only applies to text of sufficient length — short claims get uncertain by default
+  if (!domain && text.length >= 60) {
+    // Must be at least 60 chars to do text-structure scoring
+    const hasNamedSource = /\b(reuters|bbc|ap news|cnn|associated press|npr|the guardian|new york times|washington post|bloomberg|politifact|snopes|factcheck)\b/i.test(lower);
+    const hasNumbers     = /\b\d+%|\$\d+B?M?|\d+\s*(million|billion|thousand|people|cases|deaths|percent)\b/i.test(text);
+    const hasAttribution = /\b(according to|said|confirmed by|reported by|told reporters|study shows|data shows|experts say|officials say)\b/i.test(lower);
+    const hasQuotedText  = /"[^"]{15,}"/.test(text);
+
+    if (hasNamedSource) { realScore += 22; signals.push({ label: 'Named Credible Outlet', value: 'Reputable news organization referenced in text', type: 'positive' }); }
+    if (hasNumbers)     { realScore += 10; signals.push({ label: 'Specific Statistics', value: 'Contains data/numbers — typical of factual reporting', type: 'positive' }); }
+    if (hasAttribution) { realScore += 14; signals.push({ label: 'Source Attribution', value: 'Text attributes claims to named sources', type: 'positive' }); }
+    if (hasQuotedText)  { realScore += 8;  signals.push({ label: 'Direct Quotes', value: 'Contains verbatim quoted text — sign of primary source reporting', type: 'positive' }); }
+
+    // Misinformation patterns in plain text
+    const allCapsCount = (text.match(/\b[A-Z]{4,}\b/g) || []).length;
+    const bangCount    = (text.match(/!/g) || []).length;
+    if (allCapsCount > 2) { fakeScore += allCapsCount * 5; signals.push({ label: 'Excessive Caps', value: `${allCapsCount} ALL-CAPS words — common in sensationalist content`, type: 'negative' }); }
+    if (bangCount > 1)    { fakeScore += bangCount * 6;    signals.push({ label: 'Excessive Punctuation', value: `${bangCount} exclamation marks — emotional manipulation pattern`, type: 'negative' }); }
+
+    // Long neutral text lean slightly real
+    if (text.length > 150 && fakeScore === 0 && realScore < 10) {
+      realScore += 14;
+      signals.push({ label: 'Neutral Text Structure', value: 'Long text with no misinformation patterns detected', type: 'positive' });
+    }
+  } else if (!domain && text.length < 60) {
+    // Short unverified claim with no URL — too little info to judge reliably
+    signals.push({ label: 'Unverified Short Claim', value: 'Too short to analyze without a source URL — use the Verify tab to check manually', type: 'neutral' });
   }
 
   // ─────────────────────────────────────────────────────────────
-  // VERDICT DECISION  (relaxed threshold 1.2× instead of 1.5×)
-  // Trusted domain articles that have no keywords now default to REAL.
+  // VERDICT DECISION
+  //
+  // Key rules:
+  //  1. Signal strength must be meaningful (total ≥ 20) for REAL/FAKE verdict
+  //  2. Short unverified text defaults to UNCERTAIN regardless of ratio
+  //  3. Confidence is capped based on total signal strength
+  //  4. Never give 99% REAL for a 5-word claim with no source
   // ─────────────────────────────────────────────────────────────
-  const total = fakeScore + realScore || 1;
+  const total = fakeScore + realScore;
   let verdict: Verdict;
   let confidence: number;
 
-  if (fakeScore > realScore * 1.2) {
+  // ── Rule: short unsourced text → always uncertain ──
+  // A 5-word claim like "salman khan got married" has no verifiable signals
+  const isShortNoSource = !domain && !sourceDomain && text.length < 80;
+  const isZeroSignals   = total === 0;
+
+  if (isZeroSignals || isShortNoSource) {
+    verdict = 'uncertain';
+    confidence = isZeroSignals ? 55 : Math.min(55 + Math.floor(text.length / 8), 68);
+    if (isZeroSignals) {
+      signals.push({ label: 'No Strong Signals', value: 'Insufficient data to classify — paste more text or add a source URL', type: 'neutral' });
+    }
+  } else if (fakeScore > realScore * 1.25 && total >= 15) {
+    // ── FAKE: fake signals clearly dominate ──
     verdict = 'fake';
-    confidence = Math.min(Math.round(52 + (fakeScore / total) * 48), 99);
-  } else if (realScore > fakeScore * 1.2) {
+    // Confidence scales with total signal strength (capped at 97%)
+    const ratio  = Math.min(fakeScore / (total || 1), 1);
+    const strengthBonus = Math.min(total / 5, 20); // max +20 from signal strength
+    confidence = Math.min(Math.round(54 + ratio * 35 + strengthBonus), 97);
+  } else if (realScore > fakeScore * 1.25 && total >= 20) {
+    // ── REAL: real signals clearly dominate AND there are enough signals ──
+    // Requires total >= 20 to prevent "99% REAL" from a single weak signal
     verdict = 'real';
-    confidence = Math.min(Math.round(52 + (realScore / total) * 48), 99);
-  } else if (fakeScore === 0 && realScore === 0) {
-    // No signals at all — truly unanalyzable input
-    verdict = 'uncertain';
-    confidence = 55;
-    signals.push({ label: 'No Strong Signals', value: 'Text too short or lacks detectable patterns', type: 'neutral' });
+    const ratio  = Math.min(realScore / (total || 1), 1);
+    const strengthBonus = Math.min(total / 6, 18);
+    confidence = Math.min(Math.round(54 + ratio * 32 + strengthBonus), 95);
+  } else if (fakeScore > 0 && fakeScore > realScore * 1.25) {
+    // Weak fake signal but still dominant
+    verdict = 'fake';
+    confidence = Math.min(54 + Math.round(fakeScore * 0.8), 74);
   } else {
-    // Genuinely close — uncertain, but with higher minimum confidence
+    // ── UNCERTAIN: scores are close or insufficient ──
     verdict = 'uncertain';
-    confidence = Math.min(Math.round(55 + Math.abs(fakeScore - realScore) * 1.5), 79);
+    confidence = total > 0
+      ? Math.min(Math.round(57 + Math.abs(fakeScore - realScore) * 0.8), 76)
+      : 58;
   }
 
-  // Ensure minimum confidence
-  confidence = Math.max(confidence, 53);
+  // Hard floor / ceiling
+  confidence = Math.max(Math.min(confidence, 97), 53);
 
   // ── Build explanation ──
   const explanations: string[] = [];
