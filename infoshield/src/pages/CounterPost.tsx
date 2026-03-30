@@ -4,7 +4,7 @@ import {
   MessageSquare, Send, Edit3, CheckCircle, Loader, Copy, Sparkles, Zap,
   AlertTriangle, ExternalLink, X, Info, WifiOff, Wifi,
 } from 'lucide-react';
-import Sidebar from '../components/layout/Sidebar';
+import AppLayout from '../components/layout/AppLayout';
 
 // ─── Platform config ──────────────────────────────────────────────────────────
 interface Platform {
@@ -175,9 +175,7 @@ export default function CounterPost() {
   const connectedCount = Object.values(platformStatus).filter(Boolean).length;
 
   return (
-    <div className="flex min-h-screen bg-dark">
-      <Sidebar />
-      <main className="ml-64 flex-1 p-6">
+    <AppLayout title="Counter-Post System" subtitle="AI-generated platform-specific counter-messaging">
 
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
@@ -480,7 +478,6 @@ export default function CounterPost() {
             );
           })}
         </div>
-      </main>
-    </div>
+    </AppLayout>
   );
 }

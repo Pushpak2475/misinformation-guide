@@ -29,61 +29,7 @@ export interface ClassificationResult {
   processingTimeMs: number;
 }
 
-// ─────────────────────────────────────────────────────────────
-// SOURCE CREDIBILITY DATABASE (expanded to 80+ domains)
-// ─────────────────────────────────────────────────────────────
-export const CREDIBILITY_DB: Record<string, number> = {
-  // ── Tier S: Government & Academic (≥95) ──
-  'who.int': 98, 'cdc.gov': 97, 'nih.gov': 97, 'nasa.gov': 97,
-  'un.org': 95,  'ec.europa.eu': 94, 'gov.uk': 93,
 
-  // ── Tier A: Major Wire Services (≥90) ──
-  'reuters.com': 95, 'apnews.com': 95, 'bbc.com': 95, 'bbc.co.uk': 95,
-  'npr.org': 92, 'nytimes.com': 90, 'washingtonpost.com': 88,
-  'theguardian.com': 88, 'economist.com': 91, 'ft.com': 90,
-  'bloomberg.com': 89, 'wsj.com': 88, 'time.com': 87,
-  'associated-press.com': 95,
-
-  // ── Tier A: Fact-Checking Sites (≥90) ──
-  'snopes.com': 93, 'factcheck.org': 94, 'politifact.com': 92,
-  'fullfact.org': 91, 'afpfactcheck.com': 90, 'factcheck.afp.com': 90,
-  'checkyourfact.com': 88, 'leadstories.com': 87,
-  'truthorfiction.com': 85, 'mediabiasfactcheck.com': 83,
-
-  // ── Tier B: Mainstream Broadcast (70–89) ──
-  'cnn.com': 78, 'nbcnews.com': 80, 'abcnews.go.com': 82,
-  'cbsnews.com': 82, 'aljazeera.com': 82,
-  'pbs.org': 86, 'sky.com': 75, 'skynews.com': 75,
-  'thehill.com': 72, 'politico.com': 74, 'axios.com': 82,
-  'theatlantic.com': 83, 'vox.com': 72, 'vice.com': 65,
-
-  // ── Tier C: Politically Leaning / Tabloids (40–69) ──
-  'foxnews.com': 55, 'msnbc.com': 65, 'nypost.com': 48,
-  'dailymail.co.uk': 42, 'mirror.co.uk': 45, 'thesun.co.uk': 40,
-  'express.co.uk': 38, 'telegraph.co.uk': 72,
-
-  // ── Tier D: State Media / Propaganda (25–39) ──
-  'rt.com': 32, 'sputniknews.com': 25, 'presstv.com': 28,
-  'cgtn.com': 35, 'tass.com': 35,
-
-  // ── Tier E: Alt-Media / Misinformation (≤24) ──
-  'infowars.com': 8, 'naturalnews.com': 9, 'breitbart.com': 22,
-  'zerohedge.com': 20, 'beforeitsnews.com': 10,
-  'theonion.com': 5,   // satire — treat as non-credible for scoring
-  'babylonbee.com': 5, // satire
-  'worldnewsdailyreport.com': 5, 'empirenews.net': 4,
-  'abcnews.com.co': 4, 'usatoday.com.co': 4,
-  'nationalreport.net': 4, 'newslo.com': 10,
-
-  // ── Social Media ──
-  'reddit.com': 55, 'twitter.com': 50, 'x.com': 50,
-  'facebook.com': 40, 'mastodon.social': 52, 'instagram.com': 42,
-  'tiktok.com': 38, 'youtube.com': 60,
-
-  // ── News Aggregators ──
-  'google.com': 75, 'news.google.com': 75, 'news.ycombinator.com': 70,
-  'flipboard.com': 62,
-};
 
 // ─────────────────────────────────────────────────────────────
 // KEYWORD DICTIONARIES

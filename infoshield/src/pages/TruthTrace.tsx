@@ -1,7 +1,7 @@
 import { useState, type ElementType } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GitBranch, Search, ChevronRight, AlertTriangle, CheckCircle, XCircle, Loader, Info, Clock } from 'lucide-react';
-import Sidebar from '../components/layout/Sidebar';
+import AppLayout from '../components/layout/AppLayout';
 
 interface TraceNode {
   id: string;
@@ -128,9 +128,7 @@ export default function TruthTrace() {
   const debunk = nodes.find((n) => n.type === 'debunk');
 
   return (
-    <div className="flex min-h-screen bg-dark">
-      <Sidebar />
-      <main className="ml-64 flex-1 p-6">
+    <AppLayout title="Truth Trace Timeline" subtitle="Backtrack misinformation to its origin source, trace every mutation">
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
           <div className="flex items-center gap-3 mb-1">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-yellow-500/30 to-red-500/30 flex items-center justify-center"><GitBranch className="w-5 h-5 text-yellow-400" /></div>
@@ -205,7 +203,6 @@ export default function TruthTrace() {
             <p className="text-slate-600 text-sm mt-2">The AI will construct a full propagation timeline showing where the misinformation came from, how it mutated, and how far it spread.</p>
           </div>
         )}
-      </main>
-    </div>
+    </AppLayout>
   );
 }

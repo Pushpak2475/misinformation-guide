@@ -5,8 +5,7 @@ import {
   Copy, ExternalLink, Shield, Zap, Clock, BarChart2,
   TrendingUp, Globe, AlertCircle, Info,
 } from 'lucide-react';
-import Sidebar from '../components/layout/Sidebar';
-import Navbar from '../components/layout/Navbar';
+import AppLayout from '../components/layout/AppLayout';
 import GlassCard from '../components/ui/GlassCard';
 import RadialChart from '../components/charts/RadialChart';
 import { classifyText, type ClassificationResult } from '../services/classifierService';
@@ -135,12 +134,7 @@ export default function CheckNews() {
   const factCheckLinks = result ? getFactCheckLinks(input.slice(0, 100)) : [];
 
   return (
-    <div className="flex h-screen bg-dark overflow-hidden">
-      <Sidebar />
-      <div className="flex-1 ml-64 flex flex-col overflow-hidden">
-        <Navbar title="Check News" subtitle="Paste any headline, article, or URL — AI classifies it instantly" />
-
-        <main className="flex-1 overflow-y-auto p-6">
+    <AppLayout title="Check News" subtitle="Paste any headline, article, or URL — AI classifies it instantly">
           <div className="max-w-4xl mx-auto space-y-6">
 
             {/* ── Input Card ── */}
@@ -153,9 +147,9 @@ export default function CheckNews() {
                 </div>
 
                 {/* Mode toggle */}
-                <div className="flex gap-2 mb-4">
+                <div className="flex flex-wrap gap-2 mb-4">
                   {[
-                    { mode: 'text' as const, Icon: Search, label: 'Paste Text / Headline' },
+                    { mode: 'text' as const, Icon: Search, label: 'Paste Text' },
                     { mode: 'url'  as const, Icon: Link2,  label: 'Enter URL' },
                   ].map(({ mode, Icon, label }) => (
                     <button
@@ -289,61 +283,64 @@ export default function CheckNews() {
                     className="rounded-2xl border p-5"
                     style={{ background: cfg.bgColor, borderColor: cfg.borderColor }}
                   >
-                    <div className="flex flex-col md:flex-row items-center gap-6">
-                      {/* Radial confidence */}
-                      <div className="flex-shrink-0">
-                        <RadialChart
-                          value={result.confidence}
-                          size={148}
-                          color={cfg.color}
-                          label={result.verdict === 'fake' ? 'FAKE' : result.verdict === 'real' ? 'REAL' : 'UNCLEAR'}
-                          sublabel={`${result.confidence}% confidence`}
-                        />
+                    <div className="flex flex-col items-center gap-6">
+                      {/* Top row: Radial + Verdict info */}
+                      <div className="flex flex-col sm:flex-row items-center gap-6 w-full">
+                        {/* Radial confidence */}
+                        <div className="flex-shrink-0">
+                          <RadialChart
+                            value={result.confidence}
+                            size={148}
+                            color={cfg.color}
+                            label={result.verdict === 'fake' ? 'FAKE' : result.verdict === 'real' ? 'REAL' : 'UNCLEAR'}
+                            sublabel={`${result.confidence}% confidence`}
+                          />
+                        </div>
+
+                        <div className="flex-1 min-w-0 w-full">
+                          {/* Verdict label */}
+                          <div className="flex items-center gap-3 mb-2 flex-wrap">
+                            <span className={cfg.badge}>{cfg.emoji} {cfg.label}</span>
+                            <span className="text-xs text-slate-500 flex items-center gap-1">
+                              <Clock className="w-3 h-3" /> {result.processingTimeMs}ms
+                            </span>
+                          </div>
+
+                          {/* Verdict description */}
+                          <p className="text-sm text-slate-300 leading-relaxed mb-4">{cfg.description}</p>
+
+                          {/* Explanation */}
+                          <div className="p-3 rounded-xl bg-white/4 border border-white/8 mb-4">
+                            <p className="text-xs text-slate-400 leading-relaxed">{result.explanation}</p>
+                          </div>
+
+                          {/* Signal chips */}
+                          <div className="flex flex-wrap gap-2">
+                            {result.signals.map((sig) => (
+                              <div
+                                key={sig.label}
+                                className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border"
+                                style={{
+                                  background: sig.type === 'positive' ? 'rgba(16,185,129,0.1)' :
+                                              sig.type === 'negative' ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.04)',
+                                  borderColor: sig.type === 'positive' ? 'rgba(16,185,129,0.3)' :
+                                               sig.type === 'negative' ? 'rgba(239,68,68,0.3)' : 'rgba(255,255,255,0.1)',
+                                  color: sig.type === 'positive' ? '#34d399' :
+                                         sig.type === 'negative' ? '#f87171' : '#94a3b8',
+                                }}
+                              >
+                                <span>{sig.type === 'positive' ? '✓' : sig.type === 'negative' ? '✗' : '·'}</span>
+                                <span className="font-medium">{sig.label}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                       </div>
 
-                      <div className="flex-1 min-w-0">
-                        {/* Verdict label */}
-                        <div className="flex items-center gap-3 mb-2 flex-wrap">
-                          <span className={cfg.badge}>{cfg.emoji} {cfg.label}</span>
-                          <span className="text-xs text-slate-500 flex items-center gap-1">
-                            <Clock className="w-3 h-3" /> {result.processingTimeMs}ms
-                          </span>
-                        </div>
-
-                        {/* Verdict description */}
-                        <p className="text-sm text-slate-300 leading-relaxed mb-4">{cfg.description}</p>
-
-                        {/* Explanation */}
-                        <div className="p-3 rounded-xl bg-white/4 border border-white/8 mb-4">
-                          <p className="text-xs text-slate-400 leading-relaxed">{result.explanation}</p>
-                        </div>
-
-                        {/* Signal chips */}
-                        <div className="flex flex-wrap gap-2">
-                          {result.signals.map((sig) => (
-                            <div
-                              key={sig.label}
-                              className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border"
-                              style={{
-                                background: sig.type === 'positive' ? 'rgba(16,185,129,0.1)' :
-                                            sig.type === 'negative' ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.04)',
-                                borderColor: sig.type === 'positive' ? 'rgba(16,185,129,0.3)' :
-                                             sig.type === 'negative' ? 'rgba(239,68,68,0.3)' : 'rgba(255,255,255,0.1)',
-                                color: sig.type === 'positive' ? '#34d399' :
-                                       sig.type === 'negative' ? '#f87171' : '#94a3b8',
-                              }}
-                            >
-                              <span>{sig.type === 'positive' ? '✓' : sig.type === 'negative' ? '✗' : '·'}</span>
-                              <span className="font-medium">{sig.label}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Reference sources panel */}
-                      <div className="flex-shrink-0 min-w-[160px]">
+                      {/* Reference sources — full width row below on mobile */}
+                      <div className="w-full border-t border-white/5 pt-4">
                         <div className="text-xs text-slate-500 uppercase tracking-wider mb-2">Verify via</div>
-                        <div className="space-y-1.5">
+                        <div className="flex flex-wrap gap-x-4 gap-y-1.5">
                           {result.sources.slice(0, 5).map((src) => (
                             <a
                               key={src.name}
@@ -353,7 +350,7 @@ export default function CheckNews() {
                               className="flex items-center gap-2 text-xs hover:text-white transition-colors group py-0.5"
                             >
                               <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: src.color }} />
-                              <span className="text-slate-400 group-hover:text-white transition-colors flex-1">{src.name}</span>
+                              <span className="text-slate-400 group-hover:text-white transition-colors">{src.name}</span>
                               <ExternalLink className="w-2.5 h-2.5 text-slate-700 group-hover:text-primary" />
                             </a>
                           ))}
@@ -418,8 +415,8 @@ export default function CheckNews() {
                                   }}>
                                     {sig.type === 'positive' ? '✓' : sig.type === 'negative' ? '✗' : '●'}
                                   </span>
-                                  <span className="font-medium text-slate-300 w-40 flex-shrink-0">{sig.label}</span>
-                                  <span className="text-slate-500 flex-1">{sig.value}</span>
+                                  <span className="font-medium text-slate-300 w-32 sm:w-40 flex-shrink-0">{sig.label}</span>
+                                  <span className="text-slate-500 flex-1 min-w-0 break-words">{sig.value}</span>
                                 </div>
                               ))}
                             </div>
@@ -588,8 +585,6 @@ export default function CheckNews() {
             </AnimatePresence>
 
           </div>
-        </main>
-      </div>
-    </div>
+    </AppLayout>
   );
 }

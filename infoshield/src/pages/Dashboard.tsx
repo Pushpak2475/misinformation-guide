@@ -4,12 +4,14 @@ import {
   AlertCircle, RefreshCw, ExternalLink, Flame,
   MessageSquare, Globe, TrendingUp,
 } from 'lucide-react';
-import Sidebar from '../components/layout/Sidebar';
-import Navbar from '../components/layout/Navbar';
+import AppLayout from '../components/layout/AppLayout';
 import GlassCard from '../components/ui/GlassCard';
+import RefreshStatusBar from '../components/ui/RefreshStatusBar';
+import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import {
   fetchAllNews, fetchRedditTrending, fetchGoogleTrends, fetchHackerNews,
-  RSS_SOURCES, type NewsItem, type RedditPost, type SocialPost, type TrendItem,
+  fetchIndiaNews,
+  RSS_SOURCES, INDIA_SOURCES, type NewsItem, type RedditPost, type SocialPost, type TrendItem,
 } from '../services/newsService';
 import { classifyText, getDomainCredibility, type Verdict } from '../services/classifierService';
 import {
@@ -69,22 +71,40 @@ export default function Dashboard() {
   const loadData = useCallback(async () => {
     setRefreshing(true);
     try {
-      const [rawNews, redditPosts, googleTrends, hackerNews] = await Promise.all([
+      // Fetch from both international AND all 14 India sources simultaneously
+      const [rawIntl, rawIndia, redditPosts, googleTrends, hackerNews] = await Promise.all([
         fetchAllNews(20),
+        fetchIndiaNews(20),
         fetchRedditTrending(false),
         fetchGoogleTrends(),
         fetchHackerNews(6),
       ]);
 
-      const classified: ClassifiedNews[] = await Promise.all(
-        rawNews.map(async (item) => {
-          const res = await classifyText(`${item.title} ${item.description}`);
+      // Merge and deduplicate by title prefix
+      const seen = new Set<string>();
+      const rawNews: NewsItem[] = [];
+      for (const item of [...rawIntl, ...rawIndia]) {
+        const key = item.title.slice(0, 40).toLowerCase();
+        if (!seen.has(key)) { seen.add(key); rawNews.push(item); }
+      }
+
+      // Classify in batches of 5 to avoid overwhelming the classifier
+      const classified: ClassifiedNews[] = [];
+      const BATCH = 5;
+      for (let i = 0; i < rawNews.length; i += BATCH) {
+        const batch = rawNews.slice(i, i + BATCH);
+        const results = await Promise.allSettled(
+          batch.map((item) => classifyText(`${item.title} ${item.description}`, item.sourceDomain))
+        );
+        for (let j = 0; j < batch.length; j++) {
+          if (results[j].status !== 'fulfilled') continue;
+          const res = (results[j] as PromiseFulfilledResult<Awaited<ReturnType<typeof classifyText>>>).value;
           const severity: ClassifiedNews['severity'] =
             res.verdict === 'fake' && res.confidence > 85 ? 'critical' :
             res.verdict === 'fake' ? 'medium' : 'low';
-          return { ...item, verdict: res.verdict, confidence: res.confidence, severity };
-        })
-      );
+          classified.push({ ...batch[j], verdict: res.verdict, confidence: res.confidence, severity });
+        }
+      }
 
       setNews(classified);
       setReddit(redditPosts.slice(0, 8));
@@ -105,11 +125,11 @@ export default function Dashboard() {
     finally { setLoading(false); setRefreshing(false); }
   }, []);
 
-  useEffect(() => {
-    loadData();
-    const t = setInterval(loadData, 5 * 60 * 1000);
-    return () => clearInterval(t);
-  }, [loadData]);
+  const { secondsLeft, isRefreshing: autoRefreshing, lastRefreshed, forceRefresh } = useAutoRefresh(loadData);
+
+  // Keep legacy refreshing state in sync for backward-compat UI
+  useEffect(() => { setRefreshing(autoRefreshing); }, [autoRefreshing]);
+
 
   const fakeCount    = news.filter((n) => n.verdict === 'fake').length;
   const realCount    = news.filter((n) => n.verdict === 'real').length;
@@ -128,13 +148,19 @@ export default function Dashboard() {
     bias: 'Center', color: getDomainCredibility(s.domain) >= 85 ? '#10b981' : '#f59e0b',
   }));
 
-  return (
-    <div className="flex h-screen bg-dark overflow-hidden">
-      <Sidebar />
-      <div className="flex-1 ml-64 flex flex-col overflow-hidden">
-        <Navbar title="Mission Control" subtitle={`Real-time misinformation feed${lastUpdated ? ` · Updated ${lastUpdated}` : ' · Loading...'}`} />
+  const totalSources = RSS_SOURCES.length + INDIA_SOURCES.length;
 
-        <main className="flex-1 overflow-y-auto p-6 space-y-6">
+  return (
+    <AppLayout title="Mission Control" subtitle={`Real-time misinformation feed · ${totalSources} sources`}>
+          {/* Auto-refresh status bar */}
+          <RefreshStatusBar
+            secondsLeft={secondsLeft}
+            isRefreshing={refreshing}
+            lastRefreshed={lastRefreshed || lastUpdated}
+            onRefreshNow={forceRefresh}
+            statusLabel={`Scanning ${totalSources} sources & verifying ${news.length} articles…`}
+          />
+
           {/* Stat cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {statsCards.map((stat, i) => (
@@ -301,7 +327,7 @@ export default function Dashboard() {
           </div>
 
           {/* Google Trends + Reddit + HackerNews + Source Credibility */}
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             {/* Google Trends */}
             <GlassCard delay={0.3} className="!p-5">
               <div className="flex items-center gap-2 mb-4">
@@ -425,8 +451,6 @@ export default function Dashboard() {
               </ResponsiveContainer>
             </GlassCard>
           )}
-        </main>
-      </div>
-    </div>
+    </AppLayout>
   );
 }

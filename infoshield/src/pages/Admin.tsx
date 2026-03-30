@@ -7,8 +7,7 @@ import {
   XCircle, BarChart2, Users, Activity, ChevronDown, ChevronUp,
   RefreshCw, Trash2, Settings, LogIn,
 } from 'lucide-react';
-import Sidebar from '../components/layout/Sidebar';
-import Navbar from '../components/layout/Navbar';
+import AppLayout from '../components/layout/AppLayout';
 import GlassCard from '../components/ui/GlassCard';
 import { flaggedItems, agentLogs, trendData } from '../data/mockData';
 import { getSession } from '../services/authService';
@@ -71,12 +70,7 @@ export default function Admin() {
   );
 
   return (
-    <div className="flex h-screen bg-dark overflow-hidden">
-      <Sidebar />
-      <div className="flex-1 ml-64 flex flex-col overflow-hidden">
-        <Navbar title="Admin Panel" subtitle="System management & oversight" />
-
-        <main className="flex-1 overflow-y-auto p-6 space-y-6">
+    <AppLayout title="Admin Panel" subtitle="System management & oversight">
           {/* Stat Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {adminStats.map((s, i) => (
@@ -109,7 +103,47 @@ export default function Admin() {
               </button>
             </div>
 
-            <div className="overflow-x-auto">
+            {/* Mobile card view */}
+            <div className="md:hidden divide-y divide-white/5">
+              {sorted.map((item) => (
+                <div key={item.id} className="p-4 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <code className="text-xs text-primary/80 bg-primary/10 px-2 py-0.5 rounded flex-shrink-0">{item.id}</code>
+                    <span className={`badge-${item.verdict} text-xs`}>{item.verdict.toUpperCase()}</span>
+                  </div>
+                  <p className="text-sm text-white leading-snug line-clamp-2">{item.title}</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs text-slate-400">{item.source}</span>
+                    <span className="text-xs text-slate-500">·</span>
+                    <span className="text-xs text-slate-400">{item.category}</span>
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ml-auto ${
+                      item.status === 'Confirmed'    ? 'bg-green-500/10 text-green-400' :
+                      item.status === 'Investigating'? 'bg-amber-500/10 text-amber-400' :
+                      'bg-slate-500/10 text-slate-400'
+                    }`}>{item.status}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 flex-1">
+                      <div className="progress-bar flex-1">
+                        <div className="h-full rounded-full" style={{ width: `${item.confidence}%`, background: item.verdict === 'fake' ? '#ef4444' : '#f59e0b' }} />
+                      </div>
+                      <span className="text-xs text-slate-400">{item.confidence}%</span>
+                    </div>
+                    <div className="flex gap-1 flex-shrink-0">
+                      <button title="Override" className="p-1.5 rounded-lg hover:bg-primary/10 hover:text-primary text-slate-500 transition-colors">
+                        <CheckCircle className="w-3.5 h-3.5" />
+                      </button>
+                      <button title="Delete" className="p-1.5 rounded-lg hover:bg-red-500/10 hover:text-red-400 text-slate-500 transition-colors">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop table view */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full data-table">
                 <thead>
                   <tr>
@@ -141,13 +175,8 @@ export default function Admin() {
                       <td>
                         <div className="flex items-center gap-2">
                           <div className="progress-bar w-16">
-                            <div
-                              className="h-full rounded-full"
-                              style={{
-                                width: `${item.confidence}%`,
-                                background: item.verdict === 'fake' ? '#ef4444' : '#f59e0b',
-                              }}
-                            />
+                            <div className="h-full rounded-full"
+                              style={{ width: `${item.confidence}%`, background: item.verdict === 'fake' ? '#ef4444' : '#f59e0b' }} />
                           </div>
                           <span className="text-xs text-slate-400">{item.confidence}%</span>
                         </div>
@@ -155,12 +184,10 @@ export default function Admin() {
                       <td><span className="text-xs text-slate-400">{item.source}</span></td>
                       <td>
                         <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                          item.status === 'Confirmed'   ? 'bg-green-500/10 text-green-400' :
+                          item.status === 'Confirmed'    ? 'bg-green-500/10 text-green-400' :
                           item.status === 'Investigating'? 'bg-amber-500/10 text-amber-400' :
                           'bg-slate-500/10 text-slate-400'
-                        }`}>
-                          {item.status}
-                        </span>
+                        }`}>{item.status}</span>
                       </td>
                       <td>
                         <div className="flex gap-1">
@@ -249,8 +276,6 @@ export default function Admin() {
               </ResponsiveContainer>
             </GlassCard>
           </div>
-        </main>
-      </div>
-    </div>
+    </AppLayout>
   );
 }

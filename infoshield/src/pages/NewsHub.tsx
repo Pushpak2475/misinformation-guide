@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MapPin, TrendingUp, Filter, ChevronDown, CheckCircle, XCircle, AlertCircle, BookOpen, ExternalLink } from 'lucide-react';
-import Sidebar from '../components/layout/Sidebar';
+import AppLayout from '../components/layout/AppLayout';
+import RefreshStatusBar from '../components/ui/RefreshStatusBar';
+import { useAutoRefresh } from '../hooks/useAutoRefresh';
 
 type Verdict = 'REAL' | 'FAKE' | 'UNVERIFIED';
 interface NewsItem { id: string; headline: string; source: string; sourceLogo: string; verdict: Verdict; confidence: number; region?: string; language?: string; timestamp: string; tags: string[]; }
@@ -16,12 +18,18 @@ const globalNews: NewsItem[] = [
 ];
 
 const indiaNews: NewsItem[] = [
-  { id: 'i1', headline: 'PM launches ₹2 lakh crore Rural Infrastructure mission — PIB official statement', source: 'PIB India', sourceLogo: '🏛️', verdict: 'REAL', confidence: 99, timestamp: '1h ago', tags: ['Government', 'Infrastructure'], language: 'English' },
-  { id: 'i2', headline: 'Viral: "India GDP overtook Germany" — partial truth, PPP basis only', source: 'The Hindu', sourceLogo: '📖', verdict: 'UNVERIFIED', confidence: 61, timestamp: '3h ago', tags: ['Economy'], language: 'English' },
-  { id: 'i3', headline: 'False: "New Education Policy cancels 2026 board exams" — MEA clarification', source: 'Indian Express', sourceLogo: '📰', verdict: 'FAKE', confidence: 93, timestamp: '5h ago', tags: ['Education'], language: 'English' },
-  { id: 'i4', headline: 'ISRO confirms Gaganyaan crew module recovery test successful', source: 'NDTV', sourceLogo: '📺', verdict: 'REAL', confidence: 97, timestamp: '7h ago', tags: ['Space', 'ISRO'], language: 'English' },
-  { id: 'i5', headline: 'Misleading: "India bans all Chinese apps permanently" — only specific apps restricted', source: 'Times of India', sourceLogo: '🗞️', verdict: 'FAKE', confidence: 87, timestamp: '9h ago', tags: ['Technology'], language: 'English' },
-  { id: 'i6', headline: 'RBI announces UPI transaction limit upgrade to ₹5 lakh for select categories', source: 'Economic Times', sourceLogo: '💰', verdict: 'REAL', confidence: 94, timestamp: '11h ago', tags: ['Finance'], language: 'English' },
+  { id: 'i1',  headline: 'PM launches ₹2 lakh crore Rural Infrastructure mission — PIB official statement', source: 'PIB India', sourceLogo: '🏛️', verdict: 'REAL', confidence: 99, timestamp: '1h ago', tags: ['Government', 'Infrastructure'], language: 'English' },
+  { id: 'i2',  headline: 'Viral: "India GDP overtook Germany" — partial truth, PPP basis only', source: 'The Hindu', sourceLogo: '📖', verdict: 'UNVERIFIED', confidence: 61, timestamp: '3h ago', tags: ['Economy'], language: 'English' },
+  { id: 'i3',  headline: 'False: "New Education Policy cancels 2026 board exams" — MEA clarification', source: 'Indian Express', sourceLogo: '📰', verdict: 'FAKE', confidence: 93, timestamp: '5h ago', tags: ['Education'], language: 'English' },
+  { id: 'i4',  headline: 'ISRO confirms Gaganyaan crew module recovery test successful', source: 'NDTV', sourceLogo: '📺', verdict: 'REAL', confidence: 97, timestamp: '7h ago', tags: ['Space', 'ISRO'], language: 'English' },
+  { id: 'i5',  headline: 'Misleading: "India bans all Chinese apps permanently" — only specific apps restricted', source: 'Times of India', sourceLogo: '🗞️', verdict: 'FAKE', confidence: 87, timestamp: '9h ago', tags: ['Technology'], language: 'English' },
+  { id: 'i6',  headline: 'RBI announces UPI transaction limit upgrade to ₹5 lakh for select categories', source: 'Economic Times', sourceLogo: '💹', verdict: 'REAL', confidence: 94, timestamp: '11h ago', tags: ['Finance'], language: 'English' },
+  { id: 'i7',  headline: 'Hindustan Times: India overtakes Japan in number of internet users — TRAI report confirmed', source: 'Hindustan Times', sourceLogo: '🗞️', verdict: 'REAL', confidence: 96, timestamp: '13h ago', tags: ['Technology'], language: 'English' },
+  { id: 'i8',  headline: 'Dainik Bhaskar: WhatsApp forward claiming new ₹500 note has RFID chip — fact check debunks', source: 'Dainik Bhaskar', sourceLogo: '🇮🇳', verdict: 'FAKE', confidence: 95, timestamp: '14h ago', tags: ['Finance', 'Fact Check'], language: 'Hindi' },
+  { id: 'i9',  headline: 'Dainik Jagran: NEET परीक्षा को लेकर वायरल संदेश — सरकार ने किया खंडन', source: 'Dainik Jagran', sourceLogo: '📜', verdict: 'FAKE', confidence: 91, timestamp: '16h ago', tags: ['Education'], language: 'Hindi' },
+  { id: 'i10', headline: 'Amar Ujala: AI-generated deepfake of UP CM goes viral — Lucknow Police issues clarification', source: 'Amar Ujala', sourceLogo: '🌅', verdict: 'FAKE', confidence: 98, timestamp: '18h ago', tags: ['AI', 'Politics'], language: 'Hindi' },
+  { id: 'i11', headline: 'The Wire: Farmers protest update — Centre assures MSP committee report by May 2026', source: 'The Wire', sourceLogo: '🔗', verdict: 'REAL', confidence: 88, timestamp: '20h ago', tags: ['Agriculture'], language: 'English' },
+  { id: 'i12', headline: 'Scroll.in: Manipur clashes — viral video from 2023 being reshared as recent incident', source: 'Scroll.in', sourceLogo: '📜', verdict: 'FAKE', confidence: 93, timestamp: '22h ago', tags: ['Law & Order'], language: 'English' },
 ];
 
 const stateNewsMap: Record<string, NewsItem[]> = {
@@ -54,7 +62,7 @@ const stateNewsMap: Record<string, NewsItem[]> = {
 };
 
 const allStates = ['Jharkhand', 'Maharashtra', 'Delhi', 'Tamil Nadu', 'West Bengal', 'Gujarat', 'Kerala', 'Karnataka', 'Rajasthan', 'Uttar Pradesh', 'Bihar', 'Odisha', 'Assam', 'Punjab', 'Haryana'];
-type Tab = 'global' | 'india' | 'state';
+type Tab = 'global' | 'india' | 'state' | 'archive';
 
 function VerdictBadge({ verdict, confidence }: { verdict: Verdict; confidence: number }) {
   if (verdict === 'REAL') return <span className="badge-real text-xs"><CheckCircle className="w-3 h-3" />{confidence}% REAL</span>;
@@ -109,26 +117,69 @@ export default function NewsHub() {
   const [selectedState, setSelectedState] = useState('Jharkhand');
   const [stateDropOpen, setStateDropOpen] = useState(false);
   const [langFilter, setLangFilter] = useState<string | null>(null);
-  const tabs = [{ id: 'global' as Tab, emoji: '🌐', label: 'Global News' }, { id: 'india' as Tab, emoji: '🇮🇳', label: 'India National' }, { id: 'state' as Tab, emoji: '🏙️', label: 'State-wise' }];
+  const [archiveSearch, setArchiveSearch] = useState('');
+  const tabs = [
+    { id: 'global'  as Tab, emoji: '🌐', label: 'Global News'    },
+    { id: 'india'   as Tab, emoji: '🇮🇳', label: 'India National' },
+    { id: 'state'   as Tab, emoji: '🏙️', label: 'State-wise'     },
+    { id: 'archive' as Tab, emoji: '📚', label: 'Archive'        },
+  ];
+  // Archive of historical misinformation events
+  const archiveNews: NewsItem[] = [
+    { id: 'a1',  headline: 'COVID-19 vaccine microchip myth debunked — traced to manipulated Bill Gates interview (2021)', source: 'WHO / Snopes', sourceLogo: '📋', verdict: 'FAKE', confidence: 99, timestamp: 'Jun 2021', tags: ['Health', 'COVID'] },
+    { id: 'a2',  headline: '2020 US Election fraud claims — all 62 court cases dismissed or rejected', source: 'AP News', sourceLogo: '📡', verdict: 'FAKE', confidence: 98, timestamp: 'Nov 2020', tags: ['Politics', 'USA'] },
+    { id: 'a3',  headline: 'India CAA 2019-20 protests: 200+ fake images and videos documented by Alt News', source: 'Alt News', sourceLogo: '🔍', verdict: 'FAKE', confidence: 96, timestamp: 'Jan 2020', tags: ['India', 'Law'] },
+    { id: 'a4',  headline: 'Russia-Ukraine war 2022: Video game footage and 2008 Georgia war clips shared as Ukraine battle', source: 'BBC Verify', sourceLogo: '📺', verdict: 'FAKE', confidence: 97, timestamp: 'Mar 2022', tags: ['World', 'War'] },
+    { id: 'a5',  headline: 'Demonetisation 2016: "New ₹2000 note has GPS chip" — Reserve Bank of India denial', source: 'RBI / Snopes', sourceLogo: '🏦', verdict: 'FAKE', confidence: 99, timestamp: 'Nov 2016', tags: ['India', 'Finance'] },
+    { id: 'a6',  headline: 'Tablighi Jamaat COVID blame 2020: Targeted misinformation wave documented', source: 'The Wire', sourceLogo: '🔗', verdict: 'FAKE', confidence: 94, timestamp: 'Apr 2020', tags: ['India', 'Health'] },
+    { id: 'a7',  headline: 'Pulwama attack 2019: 200+ fake images and videos misattributed to the incident', source: 'Alt News', sourceLogo: '🔍', verdict: 'FAKE', confidence: 98, timestamp: 'Feb 2019', tags: ['India', 'Security'] },
+    { id: 'a8',  headline: 'Deepfake Bill Gates/Musk crypto scam videos removed from major platforms (2023)', source: 'Snopes', sourceLogo: '📋', verdict: 'FAKE', confidence: 99, timestamp: 'Mar 2023', tags: ['Technology', 'Crypto'] },
+    { id: 'a9',  headline: 'Israel-Hamas October 2023: AI-generated images tracked across Twitter, Facebook and Telegram', source: 'Reuters Fact Check', sourceLogo: '📡', verdict: 'FAKE', confidence: 97, timestamp: 'Oct 2023', tags: ['World', 'AI'] },
+    { id: 'a10', headline: 'Balakot airstrike 2019: Casualty claims debunked — zero confirmed deaths by satellite imagery', source: 'BBC Verify', sourceLogo: '📺', verdict: 'UNVERIFIED', confidence: 68, timestamp: 'Feb 2019', tags: ['India', 'Security'] },
+    { id: 'a11', headline: 'Doklam standoff 2017: Fabricated military casualty figures on WhatsApp fact-checked', source: 'The Hindu', sourceLogo: '📖', verdict: 'FAKE', confidence: 92, timestamp: 'Aug 2017', tags: ['India', 'China'] },
+    { id: 'a12', headline: 'Bihar floods 2019: 50+ viral images actually from Bangladesh, Kerala and Texas Hurricane Harvey', source: 'Boom Live', sourceLogo: '💡', verdict: 'FAKE', confidence: 95, timestamp: 'Jul 2019', tags: ['India', 'Disaster'] },
+  ];
+  const filteredArchive = archiveSearch.trim()
+    ? archiveNews.filter((n) =>
+        n.headline.toLowerCase().includes(archiveSearch.toLowerCase()) ||
+        n.tags.some((t) => t.toLowerCase().includes(archiveSearch.toLowerCase())) ||
+        n.source.toLowerCase().includes(archiveSearch.toLowerCase())
+      )
+    : archiveNews;
   const stateNews = (stateNewsMap[selectedState] ?? []).filter((n) => !langFilter || n.language === langFilter);
   const stateLangs = [...new Set((stateNewsMap[selectedState] ?? []).map((n) => n.language!).filter(Boolean))];
 
+  // Lightweight auto-refresh: NewsHub static tabs update their timestamps every 5 min.
+  // When connected to live sources this would refetch news data too.
+  const refreshCallback = useCallback(async () => {
+    // Minimal delay to simulate background check
+    await new Promise((r) => setTimeout(r, 300));
+  }, []);
+  const { secondsLeft, isRefreshing, lastRefreshed, forceRefresh } = useAutoRefresh(refreshCallback);
+
   return (
-    <div className="flex min-h-screen bg-dark">
-      <Sidebar />
-      <main className="ml-64 flex-1 p-6">
+    <AppLayout title="News Intelligence Hub" subtitle="AI-powered misinformation detection across global &amp; Indian news">
+        {/* Auto-refresh status bar */}
+        <RefreshStatusBar
+          secondsLeft={secondsLeft}
+          isRefreshing={isRefreshing}
+          lastRefreshed={lastRefreshed}
+          onRefreshNow={forceRefresh}
+          statusLabel="Refreshing news intelligence data…"
+        />
+
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
           <div className="flex items-center gap-3 mb-1">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/30 to-accent-purple/30 flex items-center justify-center"><BookOpen className="w-5 h-5 text-primary" /></div>
-            <div><h1 className="text-2xl font-bold font-display text-white">News Intelligence Hub</h1><p className="text-slate-400 text-sm">AI-powered misinformation detection across global & Indian news</p></div>
+            <div><h1 className="text-2xl font-bold font-display text-white">News Intelligence Hub</h1><p className="text-slate-400 text-sm">AI-powered misinformation detection across global &amp; Indian news</p></div>
           </div>
         </motion.div>
 
         {/* Tabs */}
-        <div className="flex gap-2 mb-6 p-1 glass rounded-xl w-fit">
+        <div className="flex gap-2 mb-6 p-1 glass rounded-xl overflow-x-auto no-scrollbar">
           {tabs.map((tab) => (
             <button key={tab.id} id={`tab-${tab.id}`} onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${activeTab === tab.id ? 'bg-primary text-dark' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>
+              className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0 ${activeTab === tab.id ? 'bg-primary text-dark' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>
               <span>{tab.emoji}</span>{tab.label}
             </button>
           ))}
@@ -144,7 +195,7 @@ export default function NewsHub() {
           {activeTab === 'india' && (
             <motion.div key="india" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
               <div className="flex flex-wrap gap-2 mb-4">
-                {['PIB India 🏛️', 'NDTV 📺', 'The Hindu 📖', 'Indian Express 📰', 'TOI 🗞️', 'ET 💹'].map((s) => (
+                {['PIB India 🏛️', 'NDTV 📺', 'The Hindu 📖', 'Indian Express 📰', 'TOI 🗞️', 'Hindustan Times 🗞️', 'Dainik Bhaskar 🇮🇳', 'Dainik Jagran 📜', 'Amar Ujala 🌅', 'The Wire 🔗'].map((s) => (
                   <span key={s} className="px-3 py-1.5 rounded-full glass text-xs text-slate-300 border border-green-500/20 flex items-center gap-1.5"><CheckCircle className="w-3 h-3 text-green-400" />{s}</span>
                 ))}
               </div>
@@ -186,8 +237,35 @@ export default function NewsHub() {
                 : <div className="glass-card text-center py-12"><MapPin className="w-10 h-10 text-slate-600 mx-auto mb-3" /><p className="text-slate-500">No data for <strong className="text-slate-300">{selectedState}</strong></p></div>}
             </motion.div>
           )}
+          {activeTab === 'archive' && (
+            <motion.div key="archive" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+              <div className="glass-card mb-5 flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xl">📚</span>
+                    <span className="font-semibold text-white text-sm">Historical Misinformation Archive</span>
+                  </div>
+                  <p className="text-xs text-slate-500 leading-relaxed">Search documented misinformation events from 2016–2024 — COVID, Pulwama, Demonetisation, Elections and more.</p>
+                </div>
+                <input
+                  value={archiveSearch}
+                  onChange={(e) => setArchiveSearch(e.target.value)}
+                  placeholder="Search: Pulwama, COVID, CAA, Demonetisation…"
+                  className="input-glass py-2 text-sm w-full sm:w-72 flex-shrink-0"
+                />
+              </div>
+              <StatsBar news={filteredArchive} />
+              {filteredArchive.length > 0
+                ? <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">{filteredArchive.map((item, i) => <NewsCard key={item.id} item={item} index={i} />)}</div>
+                : <div className="glass-card text-center py-12">
+                    <span className="text-4xl mb-3 block">🔎</span>
+                    <p className="text-slate-500">No archive results for <strong className="text-slate-300">&quot;{archiveSearch}&quot;</strong></p>
+                    <p className="text-xs text-slate-600 mt-1">Try: Pulwama, CAA, COVID, Demonetisation, Doklam, Bihar floods</p>
+                  </div>
+              }
+            </motion.div>
+          )}
         </AnimatePresence>
-      </main>
-    </div>
+    </AppLayout>
   );
 }

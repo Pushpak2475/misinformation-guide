@@ -1,10 +1,11 @@
-﻿import { motion } from 'framer-motion';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import ParticlesBackground from '../components/ui/ParticlesBackground';
 import {
   Shield, Zap, Brain, Globe, Search, BarChart2,
   ArrowRight, CheckCircle, Database, ChevronDown,
-  Activity, AlertTriangle, Lock, Cpu
+  Activity, AlertTriangle, Lock, Cpu, Menu, X
 } from 'lucide-react';
 
 const features = [
@@ -78,6 +79,7 @@ const fadeUp = (delay = 0) => ({
 
 export default function Landing() {
   const navigate = useNavigate();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
     <div className="relative min-h-screen bg-dark overflow-x-hidden">
@@ -91,32 +93,58 @@ export default function Landing() {
       <div className="fixed bottom-1/3 right-1/4 w-80 h-80 bg-accent-purple/5 rounded-full blur-3xl pointer-events-none z-0" />
 
       {/* ── NAV ── */}
-      <nav className="relative z-30 flex items-center justify-between px-6 md:px-12 py-5 glass-dark border-b border-white/5">
+      <nav className="relative z-30 flex items-center justify-between px-4 md:px-12 py-4 md:py-5 glass-dark border-b border-white/5">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-accent-purple flex items-center justify-center animate-pulse-glow">
             <Shield className="w-4 h-4 text-white" />
           </div>
-          <span className="font-display font-bold text-white text-lg">InfoShield AI</span>
+          <span className="font-display font-bold text-white text-base md:text-lg">InfoShield AI</span>
         </div>
 
+        {/* Desktop nav links */}
         <div className="hidden md:flex items-center gap-6 text-sm text-slate-400">
           <a href="#features" className="hover:text-white transition-colors">Features</a>
           <a href="#how-it-works" className="hover:text-white transition-colors">How It Works</a>
           <a href="#tech" className="hover:text-white transition-colors">Tech Stack</a>
         </div>
 
-        <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/check-news')} className="btn-ghost text-sm py-2">
-            Try Demo
-          </button>
-          <button onClick={() => navigate('/login')} className="btn-ghost text-sm py-2">
-            Sign In
-          </button>
-          <button onClick={() => navigate('/signup')} className="btn-primary text-sm py-2">
-            Sign Up
-          </button>
+        {/* Desktop CTA buttons */}
+        <div className="hidden md:flex items-center gap-3">
+          <button onClick={() => navigate('/check-news')} className="btn-ghost text-sm py-2">Try Demo</button>
+          <button onClick={() => navigate('/login')} className="btn-ghost text-sm py-2">Sign In</button>
+          <button onClick={() => navigate('/signup')} className="btn-primary text-sm py-2">Sign Up</button>
         </div>
+
+        {/* Mobile hamburger */}
+        <button
+          onClick={() => setMobileMenuOpen((v) => !v)}
+          className="md:hidden p-2 rounded-xl hover:bg-white/10 transition-colors text-slate-400"
+          aria-label="Toggle menu"
+        >
+          {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+        </button>
       </nav>
+
+      {/* Mobile menu dropdown */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.2 }}
+            className="relative z-30 md:hidden glass-dark border-b border-white/5 px-4 py-4 flex flex-col gap-3"
+          >
+            <a href="#features" onClick={() => setMobileMenuOpen(false)} className="text-sm text-slate-300 hover:text-white py-2 border-b border-white/5">Features</a>
+            <a href="#how-it-works" onClick={() => setMobileMenuOpen(false)} className="text-sm text-slate-300 hover:text-white py-2 border-b border-white/5">How It Works</a>
+            <a href="#tech" onClick={() => setMobileMenuOpen(false)} className="text-sm text-slate-300 hover:text-white py-2 border-b border-white/5">Tech Stack</a>
+            <div className="flex gap-2 pt-1">
+              <button onClick={() => { navigate('/login'); setMobileMenuOpen(false); }} className="flex-1 btn-ghost text-sm py-2">Sign In</button>
+              <button onClick={() => { navigate('/signup'); setMobileMenuOpen(false); }} className="flex-1 btn-primary text-sm py-2">Sign Up</button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── HERO ── */}
       <section className="relative z-10 min-h-screen flex flex-col items-center justify-center text-center px-6 pt-20 pb-32">
@@ -128,7 +156,7 @@ export default function Landing() {
         </motion.div>
 
         {/* Title */}
-        <motion.h1 {...fadeUp(0.1)} className="font-display text-5xl md:text-7xl lg:text-8xl font-bold leading-none mb-6 max-w-5xl">
+        <motion.h1 {...fadeUp(0.1)} className="font-display text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-bold leading-none mb-6 max-w-5xl">
           <span className="text-white">AI-Powered</span>
           <br />
           <span className="gradient-text">Misinformation</span>
@@ -205,7 +233,7 @@ export default function Landing() {
             </div>
 
             {/* Dashboard preview */}
-            <div className="grid grid-cols-3 gap-3 p-4 bg-dark-100">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-4 bg-dark-100">
               {/* Stat cards */}
               {[
                 { label: 'Scanned Today', val: '1.2M', color: '#00d4ff' },

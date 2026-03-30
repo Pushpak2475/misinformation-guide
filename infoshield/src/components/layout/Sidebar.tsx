@@ -2,9 +2,14 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Search, Shield, Settings, LogOut,
   Activity, Globe, AlertTriangle, ChevronRight, Zap, LogIn, UserPlus,
-  BookOpen, Database, MessageSquare, GitBranch,
+  BookOpen, Database, MessageSquare, GitBranch, X,
 } from 'lucide-react';
 import { getSession, logout } from '../../services/authService';
+
+interface SidebarProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
 
 const navItems = [
   { to: '/dashboard',  icon: LayoutDashboard, label: 'Dashboard' },
@@ -25,7 +30,7 @@ const sourceItems = [
   { to: '/live-stream',   icon: Zap,           label: 'Live Stream',  badge: 'ON' },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   const navigate = useNavigate();
   const session = getSession();
 
@@ -34,8 +39,20 @@ export default function Sidebar() {
     navigate('/login');
   };
 
+  const handleNavClick = () => {
+    // Close sidebar on mobile after navigation
+    onClose?.();
+  };
+
   return (
-    <aside className="fixed left-0 top-0 h-full w-64 z-40 flex flex-col glass-dark border-r border-white/5">
+    <aside
+      className={`
+        fixed left-0 top-0 h-full w-64 z-40 flex flex-col glass-dark border-r border-white/5
+        transition-transform duration-300 ease-in-out
+        ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+        lg:translate-x-0
+      `}
+    >
       {/* Logo */}
       <div className="flex items-center gap-3 px-5 py-5 border-b border-white/5">
         <div className="relative w-9 h-9 flex-shrink-0">
@@ -48,6 +65,15 @@ export default function Sidebar() {
           <div className="font-display font-bold text-white text-sm leading-none">InfoShield</div>
           <div className="text-xs text-primary/80 mt-0.5">AI Defense</div>
         </div>
+
+        {/* Close button — mobile only */}
+        <button
+          onClick={onClose}
+          className="ml-auto p-1.5 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors lg:hidden"
+          aria-label="Close sidebar"
+        >
+          <X className="w-4 h-4" />
+        </button>
       </div>
 
       {/* Live status */}
@@ -61,7 +87,7 @@ export default function Sidebar() {
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto no-scrollbar">
         <div className="text-[10px] font-semibold text-slate-600 uppercase tracking-widest px-4 mb-2">Main</div>
         {navItems.map(({ to, icon: Icon, label }) => (
-          <NavLink key={to} to={to} className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
+          <NavLink key={to} to={to} onClick={handleNavClick} className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
             <Icon className="w-4 h-4 flex-shrink-0" />
             <span>{label}</span>
             <ChevronRight className="w-3 h-3 ml-auto opacity-40" />
@@ -70,7 +96,7 @@ export default function Sidebar() {
 
         <div className="text-[10px] font-semibold text-slate-600 uppercase tracking-widest px-4 mb-2 mt-6">Intelligence</div>
         {intelligenceItems.map(({ to, icon: Icon, label, badge }) => (
-          <NavLink key={to} to={to} className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
+          <NavLink key={to} to={to} onClick={handleNavClick} className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
             <Icon className="w-4 h-4 flex-shrink-0" />
             <span>{label}</span>
             <span className="ml-auto text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary/70">{badge}</span>
@@ -79,7 +105,7 @@ export default function Sidebar() {
 
         <div className="text-[10px] font-semibold text-slate-600 uppercase tracking-widest px-4 mb-2 mt-6">Data Sources</div>
         {sourceItems.map(({ to, icon: Icon, label, badge }) => (
-          <NavLink key={to} to={to} className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
+          <NavLink key={to} to={to} onClick={handleNavClick} className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
             <Icon className="w-4 h-4 flex-shrink-0" />
             <span>{label}</span>
             <span className="ml-auto text-xs px-2 py-0.5 rounded-full bg-white/5 text-slate-400">{badge}</span>
@@ -90,11 +116,11 @@ export default function Sidebar() {
         {!session && (
           <>
             <div className="text-[10px] font-semibold text-slate-600 uppercase tracking-widest px-4 mb-2 mt-6">Account</div>
-            <NavLink to="/login" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
+            <NavLink to="/login" onClick={handleNavClick} className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
               <LogIn className="w-4 h-4 flex-shrink-0 text-primary" />
               <span>Sign In</span>
             </NavLink>
-            <NavLink to="/signup" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
+            <NavLink to="/signup" onClick={handleNavClick} className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
               <UserPlus className="w-4 h-4 flex-shrink-0 text-accent-purple" />
               <span>Create Account</span>
             </NavLink>
@@ -122,11 +148,11 @@ export default function Sidebar() {
           </>
         ) : (
           <div className="flex gap-2">
-            <button onClick={() => navigate('/login')}
+            <button onClick={() => { navigate('/login'); onClose?.(); }}
               className="flex-1 py-2 px-3 text-xs text-slate-400 border border-white/10 rounded-xl hover:border-primary/30 hover:text-primary transition-all">
               Sign In
             </button>
-            <button onClick={() => navigate('/signup')}
+            <button onClick={() => { navigate('/signup'); onClose?.(); }}
               className="flex-1 py-2 px-3 text-xs font-medium text-white btn-primary">
               Sign Up
             </button>

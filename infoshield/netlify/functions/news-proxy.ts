@@ -75,13 +75,25 @@ const ALLOWED_DOMAINS = new Set([
   'www.politifact.com',
   'www.factcheck.org',
   'fullfact.org',
-  // Indian news
-  'feeds.feedburner.com',
+  // Indian news — Tier S (most reliable)
+  'feeds.feedburner.com',      // NDTV (via FeedBurner)
   'www.thehindu.com',
-  'www.indiatoday.in',
-  'timesofindia.indiatimes.com',
   'www.hindustantimes.com',
-  // Monitored sources
+  'timesofindia.indiatimes.com',
+  'www.indiatoday.in',
+  // Indian news — Tier A
+  'indianexpress.com',
+  'economictimes.indiatimes.com',
+  'www.business-standard.com',
+  // Indian news — Tier B (Hindi dailies)
+  'www.bhaskar.com',           // Dainik Bhaskar
+  'www.jagran.com',            // Dainik Jagran
+  'www.amarujala.com',         // Amar Ujala
+  // Indian news — Tier C (regional / specialised)
+  'thewire.in',
+  'scroll.in',
+  'pib.gov.in',                // Press Information Bureau (Govt. of India)
+  // Monitored / tabloid sources
   'www.dailymail.co.uk',
   'nypost.com',
   // BBC variations

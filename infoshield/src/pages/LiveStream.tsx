@@ -14,8 +14,7 @@ import {
   Zap, RefreshCw, Activity, Pause, Play, Circle,
   AlertTriangle, ExternalLink, Radio,
 } from 'lucide-react';
-import Sidebar from '../components/layout/Sidebar';
-import Navbar from '../components/layout/Navbar';
+import AppLayout from '../components/layout/AppLayout';
 import GlassCard from '../components/ui/GlassCard';
 import {
   fetchAllNews, fetchRedditTrending, fetchNitterFeed,
@@ -223,20 +222,15 @@ export default function LiveStream() {
   const realRate   = stats.total > 0 ? Math.round((stats.real  / stats.total) * 100) : 0;
 
   return (
-    <div className="flex h-screen bg-dark overflow-hidden">
-      <Sidebar />
-      <div className="flex-1 ml-64 flex flex-col overflow-hidden">
-        <Navbar
-          title="Live Stream"
-          subtitle={
-            phase === 'fetching'     ? '⏳ Fetching from 6 platforms...' :
-            phase === 'classifying'  ? `🧠 AI classifying articles... ${progress}%` :
-            phase === 'streaming'    ? (paused ? '⏸ Paused' : `🔴 Live — ${fakeItems.length} FAKE pinned at top`) :
-            `✅ Stream complete — ${stream.length} articles classified`
-          }
-        />
-
-        <main className="flex-1 overflow-y-auto p-6 space-y-6">
+    <AppLayout
+      title="Live Stream"
+      subtitle={
+        phase === 'fetching'     ? '⏳ Fetching from 6 platforms...' :
+        phase === 'classifying'  ? `🧠 AI classifying articles... ${progress}%` :
+        phase === 'streaming'    ? (paused ? '⏸ Paused' : `🔴 Live — ${fakeItems.length} FAKE pinned at top`) :
+        `✅ Stream complete — ${stream.length} articles classified`
+      }
+    >
           {/* Progress bar during classifying */}
           {(phase === 'fetching' || phase === 'classifying') && (
             <GlassCard delay={0} className="!p-4">
@@ -471,8 +465,6 @@ export default function LiveStream() {
               </GlassCard>
             </div>
           </div>
-        </main>
-      </div>
-    </div>
+    </AppLayout>
   );
 }

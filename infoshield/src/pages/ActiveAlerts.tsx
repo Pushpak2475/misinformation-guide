@@ -8,13 +8,14 @@
  * 4. Severity calculation improved — uncertain from low-cred source = medium alert
  * 5. Source-platform badges added
  */
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, Bell, BellOff, X, RefreshCw, ExternalLink, ShieldAlert, CheckCircle } from 'lucide-react';
-import Sidebar from '../components/layout/Sidebar';
-import Navbar from '../components/layout/Navbar';
+import AppLayout from '../components/layout/AppLayout';
 import GlassCard from '../components/ui/GlassCard';
-import { fetchAllNews, fetchMisinformationSources, fetchRedditTrending } from '../services/newsService';
+import RefreshStatusBar from '../components/ui/RefreshStatusBar';
+import { useAutoRefresh } from '../hooks/useAutoRefresh';
+import { fetchAllNews, fetchMisinformationSources, fetchRedditTrending, fetchIndiaNews } from '../services/newsService';
 import { classifyText, type Verdict } from '../services/classifierService';
 
 interface Alert {
@@ -88,7 +89,6 @@ const SEV = {
 export default function ActiveAlerts() {
   const [alerts, setAlerts]             = useState<Alert[]>([]);
   const [loading, setLoading]           = useState(true);
-  const [progress, setProgress]         = useState(0);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [severityFilter, setSeverityFilter] = useState<'all' | Alert['severity']>('all');
   const [refreshing, setRefreshing]     = useState(false);
@@ -101,14 +101,14 @@ export default function ActiveAlerts() {
 
     setRefreshing(true);
     setLoading(true);
-    setProgress(0);
     setAlerts([]);
 
     try {
-      // Fetch from multiple source types in parallel
-      const [mainstream, misinfo, reddit] = await Promise.allSettled([
+      // Fetch from ALL sources: mainstream + misinformation + India + Reddit
+      const [mainstream, misinfo, india, reddit] = await Promise.allSettled([
         fetchAllNews(20),
         fetchMisinformationSources(),
+        fetchIndiaNews(20),
         fetchRedditTrending(true),
       ]);
 
@@ -125,6 +125,11 @@ export default function ActiveAlerts() {
       if (misinfo.status === 'fulfilled') {
         for (const m of misinfo.value) {
           rawItems.push({ id: m.id, title: m.title, link: m.link, source: m.source, domain: m.sourceDomain, platform: m.category });
+        }
+      }
+      if (india.status === 'fulfilled') {
+        for (const n of india.value) {
+          rawItems.push({ id: n.id, title: n.title, link: n.link, source: n.source, domain: n.sourceDomain, platform: 'India RSS' });
         }
       }
       if (reddit.status === 'fulfilled') {
@@ -171,8 +176,6 @@ export default function ActiveAlerts() {
           });
         }
 
-        setProgress(Math.round(((i + BATCH) / rawItems.length) * 100));
-
         // Update UI progressively after each batch
         const sorted = [...classified].sort(
           (a, b) => SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity]
@@ -188,19 +191,16 @@ export default function ActiveAlerts() {
       if (!ctrl.signal.aborted) {
         setLoading(false);
         setRefreshing(false);
-        setProgress(100);
       }
     }
   }, []);
 
-  useEffect(() => {
-    loadAlerts();
-    const interval = setInterval(loadAlerts, 5 * 60 * 1000);
-    return () => {
-      abortRef.current?.abort();
-      clearInterval(interval);
-    };
-  }, [loadAlerts]);
+  // Auto-refresh every 5 min (replaces the old manual setInterval)
+  const { secondsLeft, isRefreshing: autoRefreshing, lastRefreshed, forceRefresh } =
+    useAutoRefresh(loadAlerts);
+
+  // Keep legacy refreshing in sync
+  // (loadAlerts sets its own setRefreshing internally)
 
   const dismiss    = (id: string)  => setAlerts((prev) => prev.map((a) => a.id === id ? { ...a, dismissed: true } : a));
   const dismissAll = ()            => setAlerts((prev) => prev.map((a) => ({ ...a, dismissed: true })));
@@ -217,30 +217,18 @@ export default function ActiveAlerts() {
   };
 
   return (
-    <div className="flex h-screen bg-dark overflow-hidden">
-      <Sidebar />
-      <div className="flex-1 ml-64 flex flex-col overflow-hidden">
-        <Navbar
-          title="Active Alerts"
-          subtitle={
-            loading && alerts.length === 0
-              ? `Loading alerts... ${progress}%`
-              : refreshing && progress < 100
-              ? `Updating — ${progress}% complete`
-              : `${visible.length} active · ${counts.critical} critical · ${counts.high} high`
-          }
-        />
-
-        <main className="flex-1 overflow-y-auto p-6 space-y-6">
-          {/* Progress bar while loading more batches */}
-          {(refreshing || loading) && progress < 100 && progress > 0 && (
-            <div className="w-full bg-white/5 rounded-full h-1.5 overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-primary to-red-500 rounded-full transition-all duration-500"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-          )}
+    <AppLayout
+      title="Active Alerts"
+      subtitle={`${visible.length} active · ${counts.critical} critical · ${counts.high} high`}
+    >
+          {/* Auto-refresh status bar */}
+          <RefreshStatusBar
+            secondsLeft={secondsLeft}
+            isRefreshing={autoRefreshing || refreshing}
+            lastRefreshed={lastRefreshed}
+            onRefreshNow={forceRefresh}
+            statusLabel={`Scanning ${visible.length} alerts across all sources…`}
+          />
 
           {/* Stat cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -269,20 +257,20 @@ export default function ActiveAlerts() {
           {/* Alert feed */}
           <GlassCard delay={0.2} className="!p-0 overflow-hidden">
             {/* Toolbar */}
-            <div className="flex items-center gap-3 px-5 py-4 border-b border-white/5 flex-wrap">
+            <div className="flex items-center gap-2 px-4 py-3 border-b border-white/5 flex-wrap">
               <div className="flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 text-red-400" />
                 <span className="font-semibold text-white text-sm">Alert Feed</span>
                 <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                <span className="text-xs text-slate-500">RSS + Reddit + Tabloids</span>
+                <span className="text-xs text-slate-500 hidden sm:block">RSS + Reddit + Tabloids</span>
               </div>
 
-              <div className="flex gap-2 ml-auto flex-wrap items-center">
+              <div className="flex gap-1.5 ml-auto flex-wrap items-center">
                 {(['all', 'critical', 'high', 'medium', 'low'] as const).map((s) => (
                   <button
                     key={s}
                     onClick={() => setSeverityFilter(s)}
-                    className={`text-xs px-3 py-1.5 rounded-full transition-all border ${
+                    className={`text-xs px-2 sm:px-3 py-1.5 rounded-full transition-all border ${
                       severityFilter === s
                         ? s === 'all'      ? 'bg-primary/20 text-primary border-primary/30'
                         : s === 'critical' ? 'bg-red-500/20 text-red-400 border-red-500/30'
@@ -292,19 +280,23 @@ export default function ActiveAlerts() {
                         : 'border-white/8 text-slate-500 hover:text-white hover:border-white/20'
                     }`}
                   >
-                    {s.toUpperCase()}
+                    <span className="sm:hidden">
+                      {s === 'all' ? 'ALL' : s === 'critical' ? 'CRIT' : s === 'high' ? 'HIGH' : s === 'medium' ? 'MED' : 'LOW'}
+                    </span>
+                    <span className="hidden sm:inline">{s.toUpperCase()}</span>
                     {s !== 'all' && counts[s] > 0 && (
                       <span className="ml-1 opacity-70">({counts[s]})</span>
                     )}
                   </button>
                 ))}
-                <button onClick={() => setSoundEnabled((p) => !p)} className="btn-ghost py-1.5 px-3 text-xs" title="Toggle sound">
+                <button onClick={() => setSoundEnabled((p) => !p)} className="btn-ghost py-1.5 px-2 sm:px-3 text-xs" title="Toggle sound">
                   {soundEnabled ? <Bell className="w-3.5 h-3.5" /> : <BellOff className="w-3.5 h-3.5" />}
                 </button>
-                <button onClick={dismissAll} className="btn-ghost py-1.5 px-3 text-xs text-slate-500 hover:text-red-400">
-                  Dismiss All
+                <button onClick={dismissAll} className="btn-ghost py-1.5 px-2 sm:px-3 text-xs text-slate-500 hover:text-red-400">
+                  <X className="w-3.5 h-3.5 sm:hidden" />
+                  <span className="hidden sm:inline">Dismiss All</span>
                 </button>
-                <button onClick={loadAlerts} disabled={refreshing} className="btn-ghost py-1.5 px-3 text-xs">
+                <button onClick={loadAlerts} disabled={refreshing} className="btn-ghost py-1.5 px-2 sm:px-3 text-xs">
                   <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
                 </button>
               </div>
@@ -395,8 +387,6 @@ export default function ActiveAlerts() {
               )}
             </div>
           </GlassCard>
-        </main>
-      </div>
-    </div>
+    </AppLayout>
   );
 }

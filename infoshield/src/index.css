@@ -9,12 +9,28 @@
 
   html {
     scroll-behavior: smooth;
+    /* Use dynamic viewport height so iOS Safari browser chrome is respected */
+    height: -webkit-fill-available;
   }
 
   body {
     @apply bg-dark text-white font-sans antialiased;
     background: #050b18;
     overflow-x: hidden;
+    /* Prevent horizontal scroll on iOS */
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+  }
+
+  /* Prevent iOS Safari from zooming on input focus (font-size < 16px triggers it) */
+  input, textarea, select {
+    font-size: 16px;
+  }
+  /* But keep smaller font for desktop where it looks better */
+  @media (min-width: 768px) {
+    input, textarea, select {
+      font-size: inherit;
+    }
   }
 
   ::-webkit-scrollbar { width: 6px; }
