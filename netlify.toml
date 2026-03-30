@@ -1,20 +1,15 @@
-# netlify.toml — Netlify deployment configuration
-
 [build]
-  # The Vite app and functions both live inside the /infoshield subfolder.
-  # Setting base= makes all relative paths resolve from there.
-  base    = "infoshield"
-  publish = "dist"
-  # Install @netlify/functions before building so the function types resolve
-  command = "npm install && npm run build"
+  # Repo root is the CWD on Netlify — cd into the app subfolder explicitly
+  command = "cd infoshield && npm install && npm run build"
+  publish = "infoshield/dist"
 
 [build.environment]
   # Node 20 LTS
   NODE_VERSION  = "20"
 
 [functions]
-  # netlify/functions/ relative to base (infoshield/) → infoshield/netlify/functions/
-  directory    = "netlify/functions"
+  # Path relative to repo root
+  directory    = "infoshield/netlify/functions"
   node_bundler = "esbuild"
 
 [dev]
