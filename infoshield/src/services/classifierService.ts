@@ -29,7 +29,358 @@ export interface ClassificationResult {
   processingTimeMs: number;
 }
 
+// ─────────────────────────────────────────────────────────────
+// SOURCE CREDIBILITY DATABASE  (300 + domains — worldwide)
+// ─────────────────────────────────────────────────────────────
+export const CREDIBILITY_DB: Record<string, number> = {
 
+  // ════════════════════════════════════════════════════════════
+  // TIER S  — Intergovernmental / Official / Academic  (95-99)
+  // ════════════════════════════════════════════════════════════
+  'who.int': 98, 'cdc.gov': 97, 'nih.gov': 97, 'nasa.gov': 97,
+  'un.org': 96, 'unicef.org': 95, 'worldbank.org': 95,
+  'imf.org': 95, 'oecd.org': 95, 'europa.eu': 94, 'ec.europa.eu': 94,
+  'gov.uk': 93, 'gov.in': 93, 'pib.gov.in': 93, 'mea.gov.in': 93,
+  'whitehouse.gov': 92, 'state.gov': 92, 'congress.gov': 92,
+  'europarl.europa.eu': 92, 'icj-cij.org': 94, 'icc-cpi.int': 94,
+  'nature.com': 97, 'science.org': 97, 'pubmed.ncbi.nlm.nih.gov': 97,
+  'bmj.com': 96, 'thelancet.com': 96, 'jamanetwork.com': 96,
+  'nejm.org': 96,
+
+  // ════════════════════════════════════════════════════════════
+  // TIER A  — Global Wire Services  (92-95)
+  // ════════════════════════════════════════════════════════════
+  'reuters.com': 95, 'apnews.com': 95, 'afp.com': 94,
+  'bbc.com': 95, 'bbc.co.uk': 95,
+  'associated-press.com': 95, 'dpa-international.com': 93,
+  'efe.com': 92, 'ansa.it': 92, 'kyodonews.net': 92, 'yonhapnews.agency': 91,
+
+  // ════════════════════════════════════════════════════════════
+  // TIER A  — Global Fact-Checkers  (88-94)
+  // ════════════════════════════════════════════════════════════
+  'snopes.com': 93, 'factcheck.org': 94, 'politifact.com': 92,
+  'fullfact.org': 91, 'factcheck.afp.com': 90, 'afpfactcheck.com': 90,
+  'checkyourfact.com': 88, 'leadstories.com': 87,
+  'truthorfiction.com': 85, 'mediabiasfactcheck.com': 83,
+  'boomlive.in': 88, 'altnews.in': 87, 'factchecker.in': 88,
+  'vishvasnews.com': 85, 'factcrescendo.com': 84,
+  'africacheck.org': 88, 'pesacheck.org': 86,
+  'chequeado.com': 87,   // Latin America
+  'lupa.uol.com.br': 87, // Brazil
+  'maldita.es': 88,      // Spain
+  'correctiv.org': 88,   // Germany
+  'delcode.com': 82, 'logically.ai': 84,
+  'poynter.org': 88, 'niemanlab.org': 85,
+  'ifcncodeofprinciples.poynter.org': 90,
+
+  // ════════════════════════════════════════════════════════════
+  // UNITED STATES — National  (55-92)
+  // ════════════════════════════════════════════════════════════
+  'nytimes.com': 90, 'washingtonpost.com': 88, 'wsj.com': 88,
+  'usatoday.com': 82, 'latimes.com': 84, 'chicagotribune.com': 82,
+  'bostonglobe.com': 85, 'sfchronicle.com': 82,
+  'npr.org': 92, 'pbs.org': 86,
+  'cnn.com': 78, 'msnbc.com': 65, 'foxnews.com': 55,
+  'nbcnews.com': 80, 'abcnews.go.com': 82, 'cbsnews.com': 82,
+  'cbslocal.com': 78, 'abc7.com': 75,
+  'axios.com': 82, 'politico.com': 74, 'thehill.com': 72,
+  'theatlantic.com': 83, 'newyorker.com': 88,
+  'time.com': 87, 'newsweek.com': 70, 'thedailybeast.com': 65,
+  'huffpost.com': 65, 'buzzfeednews.com': 70, 'vox.com': 72,
+  'slate.com': 72, 'motherjones.com': 70, 'thenation.com': 68,
+  'theintercept.com': 68, 'propublica.org': 88, 'texastribune.org': 85,
+  'christiansciencemonitor.com': 86, 'reason.com': 65,
+  'economist.com': 91, 'ft.com': 90, 'bloomberg.com': 89,
+  'marketwatch.com': 80, 'barrons.com': 82, 'fortune.com': 80,
+  'businessinsider.com': 74, 'cnbc.com': 80, 'thestreet.com': 72,
+  'nypost.com': 48, 'nationalreview.com': 60, 'weeklystandard.com': 62,
+  'dailycaller.com': 42, 'dailywire.com': 40,
+  'thefederalist.com': 45, 'oann.com': 28, 'newsmax.com': 45,
+  'vice.com': 65, 'rollingstone.com': 68, 'vanityfair.com': 72,
+
+  // ════════════════════════════════════════════════════════════
+  // UNITED KINGDOM  (38-95)
+  // ════════════════════════════════════════════════════════════
+  'theguardian.com': 88, 'thetimes.co.uk': 84,
+  'independent.co.uk': 78, 'telegraph.co.uk': 72,
+  'sky.com': 75, 'skynews.com': 75, 'itv.com': 78, 'channel4.com': 78,
+  'eveningstandard.co.uk': 65, 'metro.co.uk': 58,
+  'dailymail.co.uk': 42, 'mirror.co.uk': 45, 'thesun.co.uk': 40,
+  'express.co.uk': 38, 'dailystar.co.uk': 35,
+  'spectator.co.uk': 65, 'newstatesman.com': 68,
+  'thi.co.uk': 72, 'politicshome.com': 72,
+
+  // ════════════════════════════════════════════════════════════
+  // EUROPE — Country by country  (28-95)
+  // ════════════════════════════════════════════════════════════
+  // Germany
+  'dw.com': 92, 'spiegel.de': 88, 'zeit.de': 88, 'faz.net': 87,
+  'sueddeutsche.de': 87, 'handelsblatt.com': 84, 'tagesschau.de': 90,
+  'bild.de': 48, 'welt.de': 70,
+
+  // France
+  'lemonde.fr': 90, 'lefigaro.fr': 82, 'liberation.fr': 80,
+  'leparisien.fr': 75, 'lesechos.fr': 84, 'france24.com': 88,
+  'rfi.fr': 88, 'franceinfo.fr': 86, 'tf1.fr': 78, 'bfmtv.com': 75,
+  'europe1.fr': 72, 'lepoint.fr': 75, 'lexpress.fr': 76,
+
+  // Spain / Portugal
+  'elpais.com': 88, 'elmundo.es': 78, 'abc.es': 72, 'elconfidencial.com': 78,
+  'lavanguardia.com': 80, 'rtve.es': 82, 'publico.es': 68,
+  'publico.pt': 72, 'observador.pt': 78, 'jn.pt': 76, 'dn.pt': 76,
+
+  // Italy
+  'corriere.it': 87, 'repubblica.it': 86, 'lastampa.it': 84,
+  'ilsole24ore.com': 85, 'tg24.sky.it': 80,
+  'rainews.it': 82, 'fanpage.it': 65,
+
+  // Netherlands / Belgium / Luxembourg
+  'nu.nl': 82, 'nos.nl': 90, 'rtl.nl': 78, 'rtbf.be': 85,
+  'vrt.be': 87, 'lesoir.be': 82, 'rtl.lu': 78,
+
+  // Switzerland / Austria
+  'nzz.ch': 90, 'srf.ch': 90, 'tagesanzeiger.ch': 85,
+  'diepresse.com': 84, 'derstandard.at': 85, 'orf.at': 88,
+
+  // Nordics
+  'svt.se': 92, 'dn.se': 86, 'aftonbladet.se': 65,
+  'dr.dk': 92, 'berlingske.dk': 85, 'politiken.dk': 84,
+  'yle.fi': 92, 'hs.fi': 86,
+  'nrk.no': 92, 'aftenposten.no': 86, 'vg.no': 70,
+
+  // Poland / Czechia / Hungary
+  'gazeta.pl': 78, 'wyborcza.pl': 80, 'tvn24.pl': 82,
+  'ihned.cz': 80, 'idnes.cz': 78, 'ct24.cz': 86,
+  'index.hu': 72, 'hvg.hu': 78,
+
+  // Russia (independent / opposition outlets only — propaganda entries are in Tier D)
+  'meduza.io': 72, 'novayagazeta.ru': 70, 'izvestia.ru': 38, 'kommersant.ru': 55,
+
+  // Eastern Europe / Balkans
+  'euractiv.com': 84, 'balkaninsight.com': 82,
+  'occrp.org': 88, 'kyivindependent.com': 80,
+  'pravda.com.ua': 75, 'ukrinform.net': 75,
+
+  // Turkey
+  'dailysabah.com': 55, 'hurriyet.com.tr': 65, 'bianet.org': 72,
+  'cumhuriyet.com.tr': 68,
+
+  // ════════════════════════════════════════════════════════════
+  // MIDDLE EAST & NORTH AFRICA  (28-90)
+  // ════════════════════════════════════════════════════════════
+  'aljazeera.com': 82, 'aljazeera.net': 82,
+  'alarabiya.net': 72, 'skynewsarabia.com': 72,
+  'middleeastmonitor.com': 68, 'middleeasteye.net': 70,
+  'arabnews.com': 66, 'gulfnews.com': 70,
+  'thenationalnews.com': 74, 'khaleejionline.com': 65,
+  'dailynewsegypt.com': 68, 'egyptindependent.com': 70,
+  'haaretz.com': 82, 'timesofisrael.com': 78, 'jpost.com': 72,
+  'ynetnews.com': 68, 'i24news.tv': 70,
+
+  'dawn.com': 80, 'geo.tv': 75, 'thenews.com.pk': 74,
+  'tribune.com.pk': 72, 'arynews.tv': 60,
+
+  // ════════════════════════════════════════════════════════════
+  // INDIA  (60-93)
+  // ════════════════════════════════════════════════════════════
+  // National English
+  'thehindu.com': 90, 'timesofindia.com': 80, 'ndtv.com': 82,
+  'indianexpress.com': 88, 'hindustantimes.com': 80,
+  'theprint.in': 82, 'thewire.in': 78, 'scroll.in': 80,
+  'livemint.com': 84, 'business-standard.com': 84,
+  'economictimes.com': 82, 'financialexpress.com': 82,
+  'deccanherald.com': 80, 'tribuneindia.com': 78,
+  'telegraphindia.com': 82, 'thestatesman.com': 78,
+  'newslaundry.com': 80, 'thequint.com': 78,
+  'indiatoday.in': 78, 'outlookindia.com': 76,
+  'firstpost.com': 72, 'news18.com': 70,
+  'zeenews.india.com': 65, 'republicworld.com': 55,
+  'opindia.com': 35, 'postcard.news': 22,
+  'newsmobile.in': 78,
+  // Regional / Hindi
+  'bhaskar.com': 72, 'jagran.com': 70, 'amarujala.com': 68,
+  'livehindustan.com': 68, 'navbharattimes.com': 70,
+  'indiatvnews.com': 65,
+
+  // ════════════════════════════════════════════════════════════
+  // SOUTH ASIA — Bangladesh, Sri Lanka, Nepal, Myanmar  (60-84)
+  // ════════════════════════════════════════════════════════════
+  'thedailystar.net': 82,   // Bangladesh
+  'prothomalo.com': 78,
+  'bdnews24.com': 76,
+  'colombopage.com': 72,    // Sri Lanka
+  'adaderana.lk': 72,
+  'daily.ft.lk': 75,
+  'thehimalayantimes.com': 72, // Nepal
+  'myrepublica.nagariknetwork.com': 70,
+  'irrawaddy.com': 78,      // Myanmar
+
+  // ════════════════════════════════════════════════════════════
+  // SOUTHEAST ASIA  (58-88)
+  // ════════════════════════════════════════════════════════════
+  // Singapore
+  'straitstimes.com': 86, 'channelnewsasia.com': 85, 'todayonline.com': 82,
+  // Malaysia
+  'malaymail.com': 78, 'freemalaysiatoday.com': 75, 'thestar.com.my': 78,
+  'malaysiakini.com': 80,
+  // Indonesia
+  'kompas.com': 82, 'tempo.co': 80, 'thejakartapost.com': 80,
+  'antaranews.com': 78,
+  // Philippines
+  'rappler.com': 80, 'inquirer.net': 78, 'philstar.com': 75,
+  'abs-cbnnews.com': 76, 'manilabulletin.com': 72,
+  // Thailand
+  'bangkokpost.com': 80, 'nationthailand.com': 78, 'thaipbsworld.com': 82,
+  // Vietnam
+  'vnexpress.net': 72, 'tuoitrenews.vn': 72,
+
+  // ════════════════════════════════════════════════════════════
+  // EAST ASIA  (35-95)
+  // ════════════════════════════════════════════════════════════
+  // China (state/propaganda tier)
+  'xinhuanet.com': 35, 'chinadaily.com.cn': 38,
+  'people.com.cn': 35, 'globaltimes.cn': 30, 'cgtn.com': 35,
+
+  // Hong Kong
+  'scmp.com': 80, 'hongkongfp.com': 80, 'rthk.hk': 82,
+
+  // Taiwan
+  'taipeitimes.com': 82, 'cna.com.tw': 88, 'taiwannews.com.tw': 78,
+  'rti.org.tw': 84,
+
+  // Japan
+  'japantimes.co.jp': 86, 'asahi.com': 86, 'mainichi.jp': 85,
+  'yomiuri.co.jp': 82, 'nhk.or.jp': 90, 'nippon.com': 80,
+
+  // South Korea
+  'koreaherald.com': 82, 'koreatimes.co.kr': 80,
+  'arirang.com': 80,
+
+  // ════════════════════════════════════════════════════════════
+  // AUSTRALIA & NEW ZEALAND  (45-95)
+  // ════════════════════════════════════════════════════════════
+  'abc.net.au': 92, 'sbs.com.au': 88, 'theconversation.com': 90,
+  'smh.com.au': 84, 'theage.com.au': 84, 'crikey.com.au': 78,
+  'news.com.au': 68, 'theaustralian.com.au': 72,
+  'theguardian.com/australia-news': 88, 'dailytelegraph.com.au': 55,
+  'heraldsun.com.au': 52, 'couriermail.com.au': 52,
+  'stuff.co.nz': 80, 'nzherald.co.nz': 80, 'rnz.co.nz': 88,
+  'tvnz.co.nz': 82,
+
+  // ════════════════════════════════════════════════════════════
+  // CANADA  (52-92)
+  // ════════════════════════════════════════════════════════════
+  'cbc.ca': 92, 'globeandmail.com': 86, 'nationalpost.com': 76,
+  'torontostar.com': 80, 'montrealgazette.com': 78,
+  'vancouversun.com': 76, 'thetyee.ca': 76, 'ricochet.media': 72,
+  'canadaland.com': 74, 'macleans.ca': 78, 'theglobeandmail.com': 86,
+  'postmedia.com': 72, 'torontosun.com': 52,
+
+  // ════════════════════════════════════════════════════════════
+  // LATIN AMERICA  (58-88)
+  // ════════════════════════════════════════════════════════════
+  // Brazil
+  'folha.uol.com.br': 88, 'estadao.com.br': 86, 'globo.com': 84,
+  'g1.globo.com': 84, 'uol.com.br': 72, 'agenciabrasil.ebc.com.br': 82,
+  'bbc.com/portuguese': 92, 'cartacapital.com.br': 72,
+  'veja.abril.com.br': 78,
+
+  // Argentina
+  'lanacion.com.ar': 84, 'clarin.com': 78, 'infobae.com': 72,
+  'ambito.com': 72,
+
+  // Mexico
+  'eluniversal.com.mx': 80, 'reforma.com': 80, 'milenio.com': 72,
+  'animalpolitico.com': 82, 'proceso.com.mx': 78,
+
+  // Colombia / Venezuela / Chile / Peru
+  'latercera.com': 80, 'elmostrador.cl': 76,    // Chile
+  'elcomercio.pe': 78, 'larepublica.pe': 74,   // Peru
+
+  // ════════════════════════════════════════════════════════════
+  // AFRICA  (52-90)
+  // ════════════════════════════════════════════════════════════
+  // Pan-African / International
+  'allafrica.com': 72, 'africatimes.com': 70,
+  'africanews.com': 78, 'theafricareport.com': 80,
+
+  // South Africa
+  'dailymaverick.co.za': 86, 'news24.com': 80, 'timeslive.co.za': 78,
+  'businessday.co.za': 82, 'ewn.co.za': 80, 'sabc.co.za': 78,
+  'groundup.org.za': 84,
+
+  // Nigeria
+  'premiumtimesng.com': 80, 'thecable.ng': 80, 'punchng.com': 75,
+  'thisdaylive.com': 72, 'vanguardngr.com': 70, 'channelstv.com': 76,
+  'nannews.ng': 72,
+
+  // Kenya / East Africa
+  'nation.africa': 80, 'standardmedia.co.ke': 76, 'theelephant.info': 80,
+  'thecitizen.co.tz': 74, 'monitor.co.ug': 76,
+
+  // Ghana / West Africa
+  'myjoyonline.com': 74, 'ghanaweb.com': 68,
+  'the-star.co.ke': 74,
+
+  // Egypt / North Africa (main entries in MENA section above)
+  'ahramonline.com': 70,
+
+  // INTERNATIONAL / MULTI-REGION — unique entries only
+  'euronews.com': 82, 'voanews.com': 80, 'rferl.org': 78,
+  'trtworld.com': 68, 'theglobepost.com': 72,
+  'qz.com': 78, 'restofworld.org': 82,
+
+  // ════════════════════════════════════════════════════════════
+  // TECHNOLOGY PRESS  (65-88)
+  // ════════════════════════════════════════════════════════════
+  'techcrunch.com': 80, 'theverge.com': 78, 'arstechnica.com': 84,
+  'wired.com': 80, 'engadget.com': 75, 'gizmodo.com': 68,
+  'zdnet.com': 75, 'cnet.com': 74, 'venturebeat.com': 72,
+  'thenextweb.com': 72, '9to5mac.com': 72, 'macrumors.com': 74,
+  'tomsguide.com': 70, 'pcmag.com': 74, 'digitaltrends.com': 72,
+  'techradar.com': 72, 'gadgets360.com': 75,
+
+  // TIER D — State-Controlled / Propaganda (20-42)
+  'rt.com': 32, 'sputniknews.com': 25, 'tass.com': 35, 'ria.ru': 35,
+  'presstv.com': 28, 'irna.ir': 35, 'isna.ir': 38,
+  'trt.net.tr': 60, 'tal.tv': 35, 'telesur.net': 38,
+  'granma.cu': 22, 'kcna.kp': 10,
+
+  // ════════════════════════════════════════════════════════════
+  // TIER E  — Misinformation / Satire / Fabricated  (1-24)
+  // ════════════════════════════════════════════════════════════
+  'infowars.com': 8, 'naturalnews.com': 9, 'breitbart.com': 22,
+  'zerohedge.com': 20, 'beforeitsnews.com': 10,
+  'theonion.com': 5, 'babylonbee.com': 5,   // satire
+  'worldnewsdailyreport.com': 5, 'empirenews.net': 4,
+  'abcnews.com.co': 4, 'usatoday.com.co': 4,
+  'nationalreport.net': 4, 'newslo.com': 10,
+  'neonnettle.com': 12, 'yournewswire.com': 8,
+  'newspunch.com': 10, 'realnewsrightnow.com': 5,
+  'mediamass.net': 6, 'satirewire.com': 6,
+  'clickhole.com': 5, 'thedailysheeple.com': 10,
+  'veteranstoday.com': 12, 'activistpost.com': 18,
+  '21stcenturywire.com': 15, 'globalresearch.ca': 20,
+  'strategic-culture.org': 18, 'mintpressnews.com': 22,
+  'thegatewaypundit.com': 18, 'dcclothesline.com': 8,
+  'conservativetreehouse.com': 20,
+
+  // ════════════════════════════════════════════════════════════
+  // SOCIAL MEDIA  (38-60)
+  // ════════════════════════════════════════════════════════════
+  'reddit.com': 55, 'twitter.com': 50, 'x.com': 50,
+  'facebook.com': 40, 'mastodon.social': 52, 'instagram.com': 42,
+  'tiktok.com': 38, 'youtube.com': 60, 'rumble.com': 32,
+  'telegram.org': 38, 'whatsapp.com': 35, 'linkedin.com': 60,
+  'threads.net': 45,
+
+  // ════════════════════════════════════════════════════════════
+  // NEWS AGGREGATORS  (62-75)
+  // ════════════════════════════════════════════════════════════
+  'google.com': 75, 'news.google.com': 75,
+  'news.ycombinator.com': 70, 'flipboard.com': 62,
+  'feedly.com': 65, 'ground.news': 75, 'allsides.com': 78,
+};
 
 // ─────────────────────────────────────────────────────────────
 // KEYWORD DICTIONARIES
@@ -99,16 +450,29 @@ const EMOTIONAL_MANIPULATION = [
 // REFERENCE / CONFIRMATION SOURCES (shown to user on results)
 // ─────────────────────────────────────────────────────────────
 export const REFERENCE_SOURCES: ClassificationResult['sources'] = [
-  { name: 'Reuters',          url: 'https://reuters.com/fact-check',      credibility: 95, color: '#10b981', badge: '✓ Wire Service' },
-  { name: 'BBC News',         url: 'https://bbc.com/news',                credibility: 95, color: '#10b981', badge: '✓ Public Broadcaster' },
-  { name: 'AP News',          url: 'https://apnews.com',                  credibility: 95, color: '#10b981', badge: '✓ Wire Service' },
-  { name: 'Snopes',           url: 'https://snopes.com',                  credibility: 93, color: '#10b981', badge: '✓ Fact-Check' },
-  { name: 'FactCheck.org',    url: 'https://factcheck.org',               credibility: 94, color: '#10b981', badge: '✓ Fact-Check' },
-  { name: 'PolitiFact',       url: 'https://politifact.com',              credibility: 92, color: '#10b981', badge: '✓ Fact-Check' },
-  { name: 'Full Fact (UK)',   url: 'https://fullfact.org',                credibility: 91, color: '#10b981', badge: '✓ Fact-Check' },
-  { name: 'AFP Fact Check',   url: 'https://factcheck.afp.com',           credibility: 90, color: '#10b981', badge: '✓ AFP' },
-  { name: 'Lead Stories',     url: 'https://leadstories.com',             credibility: 87, color: '#f59e0b', badge: '~ Independent' },
-  { name: 'MediaBias/Fact Check', url: 'https://mediabiasfactcheck.com', credibility: 83, color: '#f59e0b', badge: '~ Bias Tracker' },
+  // ── Tier S: Wire Services ──
+  { name: 'Reuters',              url: 'https://reuters.com/fact-check',        credibility: 95, color: '#10b981', badge: '✓ Wire Service'       },
+  { name: 'AP News',              url: 'https://apnews.com',                    credibility: 95, color: '#10b981', badge: '✓ Wire Service'       },
+  { name: 'AFP',                  url: 'https://afp.com',                       credibility: 94, color: '#10b981', badge: '✓ Wire Service'       },
+  // ── Global Broadcasters ──
+  { name: 'BBC News',             url: 'https://bbc.com/news',                  credibility: 95, color: '#10b981', badge: '✓ Public Broadcaster' },
+  { name: 'DW (Germany)',         url: 'https://dw.com',                        credibility: 92, color: '#10b981', badge: '✓ Public Broadcaster' },
+  { name: 'France 24',            url: 'https://france24.com',                  credibility: 88, color: '#10b981', badge: '✓ Public Broadcaster' },
+  { name: 'Al Jazeera',           url: 'https://aljazeera.com',                 credibility: 82, color: '#f59e0b', badge: '~ Int. Broadcaster'   },
+  { name: 'NHK World (Japan)',    url: 'https://nhk.or.jp',                     credibility: 90, color: '#10b981', badge: '✓ Public Broadcaster' },
+  // ── Global Fact-Checkers ──
+  { name: 'Snopes',               url: 'https://snopes.com',                    credibility: 93, color: '#10b981', badge: '✓ Fact-Check'        },
+  { name: 'FactCheck.org',        url: 'https://factcheck.org',                 credibility: 94, color: '#10b981', badge: '✓ Fact-Check'        },
+  { name: 'PolitiFact',           url: 'https://politifact.com',                credibility: 92, color: '#10b981', badge: '✓ Fact-Check'        },
+  { name: 'Full Fact (UK)',        url: 'https://fullfact.org',                  credibility: 91, color: '#10b981', badge: '✓ Fact-Check'        },
+  { name: 'AFP Fact Check',       url: 'https://factcheck.afp.com',             credibility: 90, color: '#10b981', badge: '✓ AFP Fact-Check'    },
+  { name: 'Africa Check',         url: 'https://africacheck.org',               credibility: 88, color: '#10b981', badge: '✓ Fact-Check Africa' },
+  { name: 'BOOM Live (India)',     url: 'https://boomlive.in',                   credibility: 88, color: '#10b981', badge: '✓ Fact-Check India'  },
+  { name: 'Alt News (India)',      url: 'https://altnews.in',                    credibility: 87, color: '#10b981', badge: '✓ Fact-Check India'  },
+  { name: 'Chequeado (LATAM)',     url: 'https://chequeado.com',                 credibility: 87, color: '#10b981', badge: '✓ Fact-Check LATAM'  },
+  { name: 'Correctiv (Germany)',   url: 'https://correctiv.org',                 credibility: 88, color: '#10b981', badge: '✓ Fact-Check EU'     },
+  { name: 'Lead Stories',         url: 'https://leadstories.com',               credibility: 87, color: '#f59e0b', badge: '~ Independent'       },
+  { name: 'MediaBias/Fact Check', url: 'https://mediabiasfactcheck.com',        credibility: 83, color: '#f59e0b', badge: '~ Bias Tracker'      },
 ];
 
 // ─────────────────────────────────────────────────────────────
@@ -301,7 +665,7 @@ export async function classifyText(
   // Only applies to text of sufficient length — short claims get uncertain by default
   if (!domain && text.length >= 60) {
     // Must be at least 60 chars to do text-structure scoring
-    const hasNamedSource = /\b(reuters|bbc|ap news|cnn|associated press|npr|the guardian|new york times|washington post|bloomberg|politifact|snopes|factcheck)\b/i.test(lower);
+    const hasNamedSource = /\b(reuters|bbc|ap news|ap news agency|associated press|afp|agence france-presse|npr|pbs|cnn|nbc|abc news|cbs news|msnbc|the guardian|new york times|washington post|wall street journal|bloomberg|the economist|financial times|time magazine|politifact|snopes|factcheck|full fact|africa check|boom live|alt news|poynter|al jazeera|dw|deutsche welle|france 24|rfi|euronews|trt world|nikkei|nhk|kyodo|yonhap|ndtv|the hindu|indian express|hindustan times|times of india|the print|scroll\.in|the wire|south china morning post|straits times|channel news asia|rappler|inquirer|bangkokpost|kompas|dawn|geo tv|haaretz|times of israel|daily maverick|premium times|nation africa|corriere della sera|le monde|el pais|spiegel|sueddeutsche|nzz|nos|svt|nrk|yle|dr\.dk|abc australia|cbc|globe and mail|folha|estadao|globo|clarin|la nacion|occrp|propublica)\b/i.test(lower);
     const hasNumbers     = /\b\d+%|\$\d+B?M?|\d+\s*(million|billion|thousand|people|cases|deaths|percent)\b/i.test(text);
     const hasAttribution = /\b(according to|said|confirmed by|reported by|told reporters|study shows|data shows|experts say|officials say)\b/i.test(lower);
     const hasQuotedText  = /"[^"]{15,}"/.test(text);
